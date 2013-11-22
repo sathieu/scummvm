@@ -124,6 +124,7 @@ _faad=auto
 _fluidsynth=auto
 _opengl=auto
 _opengles=auto
+_s2tc=auto
 _readline=auto
 _freetype2=auto
 _taskbar=auto
@@ -941,6 +942,9 @@ Optional Libraries:
   --with-opengl-prefix=DIR Prefix where OpenGL (ES) is installed (optional)
   --disable-opengl         disable OpenGL (ES) support [autodetect]
 
+  --with-s2tc-prefix=DIR   Prefix where S2TC is installed (optional)
+  --disable-s2tc           disable S2TC support [autodetect]
+
   --with-jpeg-prefix=DIR   Prefix where libjpeg is installed (optional)
   --disable-jpeg           disable JPEG decoder [autodetect]
 
@@ -1044,6 +1048,8 @@ for ac_option in $@; do
 	--disable-libunity)       _libunity=no    ;;
 	--enable-opengl)          _opengl=yes     ;;
 	--disable-opengl)         _opengl=no      ;;
+	--enable-s2tc)            _s2tc=yes     ;;
+	--disable-s2tc)           _s2tc=no      ;;
 	--enable-bink)            _bink=yes       ;;
 	--disable-bink)           _bink=no        ;;
 	--enable-verbose-build)   _verbose_build=yes ;;
@@ -1150,6 +1156,11 @@ for ac_option in $@; do
 		arg=`echo $ac_option | cut -d '=' -f 2`
 		OPENGL_CFLAGS="-I$arg/include"
 		OPENGL_LIBS="-L$arg/lib"
+		;;
+	--with-s2tc-prefix=*)
+		arg=`echo $ac_option | cut -d '=' -f 2`
+		S2TC_CFLAGS="-I$arg/include"
+		S2TC_LIBS="-L$arg/lib"
 		;;
 	--backend=*)
 		_backend=`echo $ac_option | cut -d '=' -f 2`
@@ -3881,6 +3892,29 @@ fi
 define_in_config_if_yes "$_opengl" "USE_OPENGL"
 define_in_config_if_yes "$_opengles" "USE_GLES"
 
+#
+# Check for S2TC
+#
+echocheck "S2TC"
+
+if test "$_s2tc" = auto ; then
+	_s2tc=no
+	# Test the current header for S2TC
+	cat > $TMPC << EOF
+#include <txc_dxtn.h>
+#include <stdio.h>
+int main(void) { printf("ANTIVIRUS FALSE POSITIVE WORKAROUND"); return CHAN_MAX; }
+EOF
+	cc_check $DEFINES $S2TC_CFLAGS $S2TC_LIBS && _s2tc=yes && break
+fi
+
+if test "$_s2tc" = yes ; then
+	LIBS="$LIBS $S2TC_LIBS -ltxc_dxtn"
+	INCLUDES="$INCLUDES $S2TC_CFLAGS"
+fi
+echo "$_s2tc"
+
+define_in_config_if_yes "$_s2tc" "USE_S2TC"
 
 #
 # Check for nasm
