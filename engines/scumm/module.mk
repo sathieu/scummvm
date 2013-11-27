@@ -66,6 +66,7 @@ MODULE_OBJS := \
 	script_v6.o \
 	script.o \
 	scumm.o \
+	se/scumm_se.o \
 	sound.o \
 	string.o \
 	usage_bits.o \
