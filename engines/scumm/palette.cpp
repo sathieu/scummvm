@@ -51,6 +51,10 @@ uint16 ScummEngine::get16BitColor(uint8 r, uint8 g, uint8 b) {
 	return _outputPixelFormat.RGBToColor(r, g, b);
 }
 
+uint32 ScummEngine::get32BitColor(uint8 r, uint8 g, uint8 b, uint8 a) {
+	return _outputPixelFormat.ARGBToColor(a, r, g, b);
+}
+
 void ScummEngine::resetPalette() {
 	static const byte tableC64Palette[] = {
 #if 1  // VICE-based palette. See bug #2847001
@@ -309,7 +313,10 @@ void ScummEngine::setPCEPaletteFromPtr(const byte *ptr) {
 		*dest++ = charsetB;
 	}
 
-	if (_game.features & GF_16BIT_COLOR) {
+	if (_game.features & GF_32BIT_COLOR) {
+		for (int i = firstIndex; i < firstIndex + numcolor; ++i)
+			_32BitPalette[i] = get32BitColor(_currentPalette[i * 3 + 0], _currentPalette[i * 3 + 1], _currentPalette[i * 3 + 2]);
+	} else if (_game.features & GF_16BIT_COLOR) {
 		for (int i = firstIndex; i < firstIndex + numcolor; ++i)
 			_16BitPalette[i] = get16BitColor(_currentPalette[i * 3 + 0], _currentPalette[i * 3 + 1], _currentPalette[i * 3 + 2]);
 	}
@@ -997,7 +1004,9 @@ void ScummEngine::darkenPalette(int redScale, int greenScale, int blueScale, int
 					color = max;
 				_currentPalette[idx * 3 + 2] = color;
 
-				if (_game.features & GF_16BIT_COLOR)
+				if (_game.features & GF_32BIT_COLOR)
+					_32BitPalette[idx] = get32BitColor(_currentPalette[idx * 3 + 0], _currentPalette[idx * 3 + 1], _currentPalette[idx * 3 + 2]);
+				else if (_game.features & GF_16BIT_COLOR)
 					_16BitPalette[idx] = get16BitColor(_currentPalette[idx * 3 + 0], _currentPalette[idx * 3 + 1], _currentPalette[idx * 3 + 2]);
 			}
 			if (_game.heversion != 70)
@@ -1180,7 +1189,10 @@ void ScummEngine::swapPalColors(int a, int b) {
 	ap[2] = bp[2];
 	bp[2] = t;
 
-	if (_game.features & GF_16BIT_COLOR) {
+	if (_game.features & GF_32BIT_COLOR) {
+		_32BitPalette[a] = get32BitColor(ap[0], ap[1], ap[2]);
+		_32BitPalette[b] = get32BitColor(bp[0], bp[1], bp[2]);
+	} else if (_game.features & GF_16BIT_COLOR) {
 		_16BitPalette[a] = get16BitColor(ap[0], ap[1], ap[2]);
 		_16BitPalette[b] = get16BitColor(bp[0], bp[1], bp[2]);
 	}
@@ -1202,7 +1214,9 @@ void ScummEngine::copyPalColor(int dst, int src) {
 	dp[1] = sp[1];
 	dp[2] = sp[2];
 
-	if (_game.features & GF_16BIT_COLOR)
+	if (_game.features & GF_32BIT_COLOR)
+		_32BitPalette[dst] = get32BitColor(sp[0], sp[1], sp[2]);
+	else if (_game.features & GF_16BIT_COLOR)
 		_16BitPalette[dst] = get16BitColor(sp[0], sp[1], sp[2]);
 
 	setDirtyColors(dst, dst);
@@ -1256,7 +1270,9 @@ void ScummEngine::setPalColor(int idx, int r, int g, int b) {
 		}
 	}
 
-	if (_game.features & GF_16BIT_COLOR)
+	if (_game.features & GF_32BIT_COLOR)
+		_32BitPalette[idx] = get32BitColor(r, g, b);
+	else if (_game.features & GF_16BIT_COLOR)
 		_16BitPalette[idx] = get16BitColor(r, g, b);
 
 	setDirtyColors(idx, idx);
@@ -1417,6 +1433,14 @@ void ScummEngine::updatePalette() {
 		return;
 	}
 #endif
+	if (_game.features & GF_32BIT_COLOR) {
+		p = palette_colors;
+		for (int i = first; i < first + num; ++i) {
+			_32BitPalette[i] = get32BitColor(p[0], p[1], p[2]);
+			p += 3;
+		}
+		return;
+	}
 #endif
 
 	_system->getPaletteManager()->setPalette(palette_colors, first, num);

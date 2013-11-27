@@ -162,7 +162,10 @@ enum GameFeatures {
 	GF_SPECIAL_EDITION     = 1 << 17,
 
 	/** .pak file */
-	GF_PAKFILE             = 1 << 18
+	GF_PAKFILE             = 1 << 18,
+
+	/** SE games with 32 bit color */
+	GF_32BIT_COLOR         = 1 << 19
 
 };
 
@@ -1017,6 +1020,7 @@ protected:
 public:
 	uint8 *getHEPaletteSlot(uint16 palSlot);
 	uint16 get16BitColor(uint8 r, uint8 g, uint8 b);
+	uint32 get32BitColor(uint8 r, uint8 g, uint8 b, uint8 a = 0xFF);
 	int remapPaletteColor(int r, int g, int b, int threshold);		// Used by Actor::remapActorPalette
 	void readPCEPalette(const byte **ptr, byte **dest, int numEntries);
 	void colorPCEToRGB(uint16 color, byte *r, byte *g, byte *b);
@@ -1100,6 +1104,9 @@ public:
 
 	// Indy4 Amiga specific
 	byte *_verbPalette;
+
+	// SE specific
+	uint32 *_32BitPalette;
 
 protected:
 	int _shadowPaletteSize;

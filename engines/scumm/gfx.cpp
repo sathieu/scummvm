@@ -52,6 +52,7 @@ static void fill(byte *dst, int dstPitch, uint16 color, int w, int h, uint8 bitD
 #ifndef USE_ARM_GFX_ASM
 static void copy8Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
 #endif
+static void copy32Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
 static void clear8Col(byte *dst, int dstPitch, int height, uint8 bitDepth);
 
 static void ditherHerc(byte *src, byte *hercbuf, int srcPitch, int *x, int *y, int *width, int *height);
@@ -254,6 +255,9 @@ GdiV2::~GdiV2() {
 #ifdef USE_RGB_COLOR
 GdiHE16bit::GdiHE16bit(ScummEngine *vm) : GdiHE(vm) {
 }
+
+GdiTrueColor::GdiTrueColor(ScummEngine *vm) : Gdi(vm) {
+}
 #endif
 
 void Gdi::init() {
@@ -393,7 +397,9 @@ void ScummEngine::initVirtScreen(VirtScreenNumber slot, int top, int width, int 
 	vs->hasTwoBuffers = twobufs;
 	vs->xstart = 0;
 	vs->backBuf = NULL;
-	if (_game.features & GF_16BIT_COLOR)
+	if (_game.features & GF_32BIT_COLOR)
+		vs->format = Graphics::PixelFormat(4, 8, 8, 8, 8, 8, 16, 24, 0);
+	else if (_game.features & GF_16BIT_COLOR)
 		vs->format = Graphics::PixelFormat(2, 5, 5, 5, 0, 10, 5, 0, 0);
 	else
 		vs->format = Graphics::PixelFormat::createFormatCLUT8();
@@ -659,7 +665,26 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 			return;
 		} else
 #endif
-		if (_outputPixelFormat.bytesPerPixel == 2) {
+		if (_outputPixelFormat.bytesPerPixel == 4) {
+			const byte *srcPtr = (const byte *)src;
+			const byte *textPtr = (byte *)_textSurface.getBasePtr(x * m, y * m);
+			byte *dstPtr = _compositeBuf;
+
+			for (int h = 0; h < height * m; ++h) {
+				for (int w = 0; w < width * m; ++w) {
+					uint32 tmp = *textPtr++;
+					if (tmp == CHARSET_MASK_TRANSPARENCY) {
+						tmp = READ_UINT32(srcPtr);
+						WRITE_UINT32(dstPtr, tmp); dstPtr += 4;
+					} else {
+						WRITE_UINT32(dstPtr, _32BitPalette[tmp]); dstPtr += 4;
+					}
+					srcPtr += vs->format.bytesPerPixel;
+				}
+				srcPtr += vsPitch;
+				textPtr += _textSurface.pitch - width * m;
+			}
+		} else if (_outputPixelFormat.bytesPerPixel == 2) {
 			const byte *srcPtr = (const byte *)src;
 			const byte *textPtr = (byte *)_textSurface.getBasePtr(x * m, y * m);
 			byte *dstPtr = _compositeBuf;
@@ -1079,7 +1104,9 @@ void ScummEngine::restoreBackground(Common::Rect rect, byte backColor) {
 		}
 #endif
 
-		if (_game.features & GF_16BIT_COLOR)
+		if (_game.features & GF_32BIT_COLOR)
+			fill(screenBuf, vs->pitch, _32BitPalette[backColor], width, height, vs->format.bytesPerPixel);
+		else if (_game.features & GF_16BIT_COLOR)
 			fill(screenBuf, vs->pitch, _16BitPalette[backColor], width, height, vs->format.bytesPerPixel);
 		else
 			fill(screenBuf, vs->pitch, backColor, width, height, vs->format.bytesPerPixel);
@@ -1177,7 +1204,13 @@ static void fill(byte *dst, int dstPitch, uint16 color, int w, int h, uint8 bitD
 	assert(h > 0);
 	assert(dst != NULL);
 
-	if (bitDepth == 2) {
+	if (bitDepth == 4) {
+		do {
+			for (int i = 0; i < w; i++)
+				WRITE_UINT32(dst + i * 4, color);
+			dst += dstPitch;
+		} while (--h);
+	} else if (bitDepth == 2) {
 		do {
 			for (int i = 0; i < w; i++)
 				WRITE_UINT16(dst + i * 2, color);
@@ -1209,7 +1242,7 @@ static void copy8Col(byte *dst, int dstPitch, const byte *src, int height, uint8
 #else
 		((uint32 *)dst)[0] = ((const uint32 *)src)[0];
 		((uint32 *)dst)[1] = ((const uint32 *)src)[1];
-		if (bitDepth == 2) {
+		if (bitDepth >= 2) {
 			((uint32 *)dst)[2] = ((const uint32 *)src)[2];
 			((uint32 *)dst)[3] = ((const uint32 *)src)[3];
 		}
@@ -1221,6 +1254,30 @@ static void copy8Col(byte *dst, int dstPitch, const byte *src, int height, uint8
 
 #endif /* USE_ARM_GFX_ASM */
 
+static void copy32Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth) {
+
+	do {
+#if defined(SCUMM_NEED_ALIGNMENT)
+		memcpy(dst, src, 8 * bitDepth);
+#else
+		((uint32 *)dst)[0] = ((const uint32 *)src)[0];
+		((uint32 *)dst)[1] = ((const uint32 *)src)[1];
+		if (bitDepth >= 2) {
+			((uint32 *)dst)[2] = ((const uint32 *)src)[2];
+			((uint32 *)dst)[3] = ((const uint32 *)src)[3];
+		}
+		if (bitDepth == 4) {
+			((uint32 *)dst)[4] = ((const uint32 *)src)[4];
+			((uint32 *)dst)[5] = ((const uint32 *)src)[5];
+			((uint32 *)dst)[6] = ((const uint32 *)src)[6];
+			((uint32 *)dst)[7] = ((const uint32 *)src)[7];
+		}
+#endif
+		dst += dstPitch;
+		src += dstPitch;
+	} while (--height);
+}
+
 static void clear8Col(byte *dst, int dstPitch, int height, uint8 bitDepth) {
 	do {
 #if defined(SCUMM_NEED_ALIGNMENT)
@@ -1228,9 +1285,15 @@ static void clear8Col(byte *dst, int dstPitch, int height, uint8 bitDepth) {
 #else
 		((uint32 *)dst)[0] = 0;
 		((uint32 *)dst)[1] = 0;
-		if (bitDepth == 2) {
+		if (bitDepth >= 2) {
 			((uint32 *)dst)[2] = 0;
 			((uint32 *)dst)[3] = 0;
+		}
+		if (bitDepth == 4) {
+			((uint32 *)dst)[4] = 0;
+			((uint32 *)dst)[5] = 0;
+			((uint32 *)dst)[6] = 0;
+			((uint32 *)dst)[7] = 0;
 		}
 #endif
 		dst += dstPitch;
@@ -1357,7 +1420,9 @@ void ScummEngine::drawBox(int x, int y, int x2, int y2, int color) {
 			fill(backbuff, vs->pitch, flags, width, height, vs->format.bytesPerPixel);
 		}
 	} else {
-		if (_game.features & GF_16BIT_COLOR) {
+		if (_game.features & GF_32BIT_COLOR) {
+			fill(backbuff, vs->pitch, _32BitPalette[color], width, height, vs->format.bytesPerPixel);
+		} else if (_game.features & GF_16BIT_COLOR) {
 			fill(backbuff, vs->pitch, _16BitPalette[color], width, height, vs->format.bytesPerPixel);
 		} else {
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
@@ -1470,7 +1535,12 @@ void ScummEngine_v5::drawFlashlight() {
 		int d = corner_data[i];
 
 		for (j = 0; j < d; j++) {
-			if (vs->format.bytesPerPixel == 2) {
+			if (vs->format.bytesPerPixel == 4) {
+				WRITE_UINT32(&_flashlight.buffer[minrow + 4 * j], 0);
+				WRITE_UINT32(&_flashlight.buffer[minrow + maxcol - 4 * j], 0);
+				WRITE_UINT32(&_flashlight.buffer[maxrow + 4 * j], 0);
+				WRITE_UINT32(&_flashlight.buffer[maxrow + maxcol - 4 * j], 0);
+			} else if (vs->format.bytesPerPixel == 2) {
 				WRITE_UINT16(&_flashlight.buffer[minrow + 2 * j], 0);
 				WRITE_UINT16(&_flashlight.buffer[minrow + maxcol - 2 * j], 0);
 				WRITE_UINT16(&_flashlight.buffer[maxrow + 2 * j], 0);
@@ -1834,7 +1904,9 @@ void Gdi::drawBitmap(const byte *ptr, VirtScreen *vs, int x, const int y, const 
 
 		if (vs->hasTwoBuffers) {
 			byte *frontBuf = (byte *)vs->getBasePtr(x * 8, y);
-			if (lightsOn)
+			if (lightsOn && (_vm->_game.features & GF_32BIT_COLOR))
+				copy32Col(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
+			else if (lightsOn)
 				copy8Col(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
 			else
 				clear8Col(frontBuf, vs->pitch, height, vs->format.bytesPerPixel);
@@ -2269,7 +2341,9 @@ void Gdi::resetBackground(int top, int bottom, int strip) {
 
 	numLinesToProcess = bottom - top;
 	if (numLinesToProcess) {
-		if (_vm->isLightOn()) {
+		if (_vm->isLightOn() && (_vm->_game.features & GF_32BIT_COLOR))
+			copy32Col(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
+		else if (_vm->isLightOn()) {
 			copy8Col(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
 		} else {
 			clear8Col(backbuff_ptr, vs->pitch, numLinesToProcess, vs->format.bytesPerPixel);
@@ -3711,6 +3785,10 @@ void Gdi::unkDecode11(byte *dst, int dstPitch, const byte *src, int height) cons
 #ifdef USE_RGB_COLOR
 void GdiHE16bit::writeRoomColor(byte *dst, byte color) const {
 	WRITE_UINT16(dst, READ_LE_UINT16(_vm->_hePalettes + 2048 + color * 2));
+}
+
+void GdiTrueColor::writeRoomColor(byte *dst, byte color) const {
+	WRITE_UINT32(dst, _vm->_32BitPalette[_roomPalette[(color + _paletteMod) & 0xFF]]);
 }
 #endif
 

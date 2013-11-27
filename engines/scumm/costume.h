@@ -104,6 +104,8 @@ protected:
 
 	void procPCEngine(Codec1 &v1);
 
+	void procTrueColorEngine(Codec1 &v1);
+
 	byte mainRoutine(int xmoveCur, int ymoveCur);
 };
 

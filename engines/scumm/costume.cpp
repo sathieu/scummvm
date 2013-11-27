@@ -305,6 +305,8 @@ byte ClassicCostumeRenderer::mainRoutine(int xmoveCur, int ymoveCur) {
 		proc3_ami(v1);
 	else if (pcEngCost)
 		procPCEngine(v1);
+	else if (_vm->_game.features & GF_32BIT_COLOR)
+		procTrueColorEngine(v1);
 	else
 		proc3(v1);
 
@@ -677,6 +679,78 @@ void ClassicCostumeRenderer::procPCEngine(Codec1 &v1) {
 			}
 		}
 	}
+}
+
+void ClassicCostumeRenderer::procTrueColorEngine(Codec1 &v1) {
+	const byte *mask, *src;
+	byte *dst;
+	byte len, maskbit;
+	int y;
+	uint color, height, pcolor;
+	byte scaleIndexY;
+	bool masked;
+
+	y = v1.y;
+	src = _srcptr;
+	dst = v1.destptr;
+	len = v1.replen;
+	color = v1.repcolor;
+	height = _height;
+
+	scaleIndexY = _scaleIndexY;
+	maskbit = revBitMask(v1.x & 7);
+	mask = v1.mask_ptr + v1.x / 8;
+
+	if (len)
+		goto StartPos;
+
+	do {
+		len = *src++;
+		color = len >> v1.shr;
+		len &= v1.mask;
+		if (!len)
+			len = *src++;
+
+		do {
+			if (_scaleY == 255 || v1.scaletable[scaleIndexY++] < _scaleY) {
+				masked = (y < 0 || y >= _out.h) || (v1.x < 0 || v1.x >= _out.w) || (v1.mask_ptr && (mask[0] & maskbit));
+
+				if (color && !masked) {
+					if (_shadow_mode & 0x20) {
+						pcolor = _shadow_table[*dst];
+					} else {
+						pcolor = _palette[color];
+						if (pcolor == 13 && _shadow_table)
+							pcolor = _shadow_table[*dst];
+					}
+					WRITE_UINT32(dst, _vm->_32BitPalette[pcolor]);
+				}
+				dst += _out.pitch;
+				mask += _numStrips;
+				y++;
+			}
+			if (!--height) {
+				if (!--v1.skip_width)
+					return;
+				height = _height;
+				y = v1.y;
+
+				scaleIndexY = _scaleIndexY;
+
+				if (_scaleX == 255 || v1.scaletable[_scaleIndexX] < _scaleX) {
+					v1.x += v1.scaleXstep;
+					if (v1.x < 0 || v1.x >= _out.w)
+						return;
+					maskbit = revBitMask(v1.x & 7);
+					v1.destptr += v1.scaleXstep * _vm->_bytesPerPixel;
+				}
+				_scaleIndexX += v1.scaleXstep;
+				dst = v1.destptr;
+				mask = v1.mask_ptr + v1.x / 8;
+			}
+		StartPos:;
+		} while (--len);
+	} while (1);
 }
 
 void ClassicCostumeLoader::loadCostume(int id) {

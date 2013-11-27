@@ -916,7 +916,7 @@ void CharsetRendererClassic::drawBitsN(const Graphics::Surface &s, byte *dst, co
 	int color;
 	byte numbits, bits;
 
-	int pitch = s.pitch - width;
+	int pitch = s.pitch - width * s.format.bytesPerPixel;
 
 	assert(bpp == 1 || bpp == 2 || bpp == 4 || bpp == 8);
 	bits = *src++;
@@ -941,10 +941,12 @@ void CharsetRendererClassic::drawBitsN(const Graphics::Surface &s, byte *dst, co
 			if (color && y + drawTop >= 0) {
 				if (amigaMap)
 					*dst = amigaMap[cmap[color]];
+				else if (s.format.bytesPerPixel == 4)
+					WRITE_UINT32(dst, _vm->_32BitPalette[cmap[color]]);
 				else
 					*dst = cmap[color];
 			}
-			dst++;
+			dst+= s.format.bytesPerPixel;
 			bits <<= bpp;
 			numbits -= bpp;
 			if (numbits == 0) {
@@ -1025,7 +1027,13 @@ void CharsetRendererTownsV3::drawBits1(Graphics::Surface &dest, int x, int y, co
 			if ((x % 8) == 0)
 				bits = *src++;
 			if ((bits & revBitMask(x % 8)) && y + drawTop >= 0) {
-				if (dest.format.bytesPerPixel == 2) {
+				if (dest.format.bytesPerPixel == 4) {
+					if (_shadowMode) {
+						WRITE_UINT32(dst + 4, _vm->_32BitPalette[_shadowColor]);
+						WRITE_UINT32(dst + dest.pitch, _vm->_32BitPalette[_shadowColor]);
+					}
+					WRITE_UINT32(dst, _vm->_32BitPalette[_color]);
+				} else if (dest.format.bytesPerPixel == 2) {
 					if (_shadowMode) {
 						WRITE_UINT16(dst + 2, _vm->_16BitPalette[_shadowColor]);
 						WRITE_UINT16(dst + dest.pitch, _vm->_16BitPalette[_shadowColor]);
@@ -1102,10 +1110,13 @@ void CharsetRendererPCE::drawBits1(Graphics::Surface &dest, int x, int y, const 
 	byte *dst = (byte *)dest.getBasePtr(x, y);
 	if (_sjisCurChar) {
 		assert(_vm->_cjkFont);
-		uint16 col1 = _color;
-		uint16 col2 = _shadowColor;
+		uint32 col1 = _color;
+		uint32 col2 = _shadowColor;
 
-		if (dest.format.bytesPerPixel == 2) {
+		if (dest.format.bytesPerPixel == 4) {
+			col1 = _vm->_32BitPalette[col1];
+			col2 = _vm->_32BitPalette[col2];
+		} else if (dest.format.bytesPerPixel == 2) {
 			col1 = _vm->_16BitPalette[col1];
 			col2 = _vm->_16BitPalette[col2];
 		}
@@ -1122,7 +1133,11 @@ void CharsetRendererPCE::drawBits1(Graphics::Surface &dest, int x, int y, const 
 			if ((bitCount % 8) == 0)
 				bits = *src++;
 			if ((bits & revBitMask(bitCount % 8)) && y + drawTop >= 0) {
-				if (dest.format.bytesPerPixel == 2) {
+				if (dest.format.bytesPerPixel == 4) {
+					if (_shadowMode)
+						WRITE_UINT32(dst + dest.pitch + 4, _vm->_32BitPalette[_shadowColor]);
+					WRITE_UINT32(dst, _vm->_32BitPalette[_color]);
+				} else if (dest.format.bytesPerPixel == 2) {
 					if (_shadowMode)
 						WRITE_UINT16(dst + dest.pitch + 2, _vm->_16BitPalette[_shadowColor]);
 					WRITE_UINT16(dst, _vm->_16BitPalette[_color]);

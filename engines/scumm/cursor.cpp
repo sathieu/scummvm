@@ -246,7 +246,9 @@ void ScummEngine_v80he::setDefaultCursor() {
 			if (pixel != cursor->getKeyColor()) {
 				pixel -= cursor->getPaletteStartIndex();
 
-				if (_bytesPerPixel == 2)
+				if (_bytesPerPixel == 4)
+					WRITE_UINT32(_grabbedCursor + (y * _cursor.width + x) * 2, get32BitColor(palette[pixel * 3], palette[pixel * 3 + 1], palette[pixel * 3 + 2]));
+				else if (_bytesPerPixel == 2)
 					WRITE_UINT16(_grabbedCursor + (y * _cursor.width + x) * 2, get16BitColor(palette[pixel * 3], palette[pixel * 3 + 1], palette[pixel * 3 + 2]));
 				else
 					_grabbedCursor[y * _cursor.width + x] = (pixel == 0) ? 0xfd : 0xfe;
@@ -587,10 +589,15 @@ void ScummEngine_v5::resetCursors() {
 
 void ScummEngine_v5::setBuiltinCursor(int idx) {
 	int i, j;
-	uint16 color;
+	uint32 color;
 	const uint16 *src = _cursorImages[_currentCursor];
 
-	if (_outputPixelFormat.bytesPerPixel == 2) {
+	if (_outputPixelFormat.bytesPerPixel == 4) {
+		color = _32BitPalette[default_cursor_colors[idx]];
+
+		for (i = 0; i < 1024; i++)
+			WRITE_UINT32(_grabbedCursor + i * 4, 0xFF);
+	} else if (_outputPixelFormat.bytesPerPixel == 2) {
 		if (_game.id == GID_LOOM && _game.platform == Common::kPlatformPCEngine) {
 			byte r, g, b;
 			colorPCEToRGB(default_pce_cursor_colors[idx], &r, &g, &b);

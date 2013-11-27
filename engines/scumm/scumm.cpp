@@ -122,7 +122,9 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	  {
 
 #ifdef USE_RGB_COLOR
-	if (_game.features & GF_16BIT_COLOR) {
+	if (_game.features & GF_32BIT_COLOR) {
+		_gdi = new GdiTrueColor(this);
+	} else if (_game.features & GF_16BIT_COLOR) {
 		if (_game.platform == Common::kPlatformPCEngine)
 			_gdi = new GdiPCEngine(this);
 		else if (_game.heversion > 0)
@@ -284,6 +286,7 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	_hePalettes = NULL;
 	_hePaletteSlot = 0;
 	_16BitPalette = NULL;
+	_32BitPalette = NULL;
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 	_townsScreen = 0;
 #ifdef USE_RGB_COLOR
@@ -550,7 +553,12 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 		_screenHeight = 200;
 	}
 
-	_bytesPerPixel = (_game.features & GF_16BIT_COLOR) ? 2 : 1;
+	if (_game.features & GF_32BIT_COLOR)
+		_bytesPerPixel = 4;
+	else if (_game.features & GF_16BIT_COLOR)
+		_bytesPerPixel = 2;
+	else
+		_bytesPerPixel = 1;
 	uint8 sizeMult = _bytesPerPixel;
 
 #ifdef USE_RGB_COLOR
@@ -635,6 +643,7 @@ ScummEngine::~ScummEngine() {
 	free(_herculesBuf);
 
 	free(_16BitPalette);
+	free(_32BitPalette);
 
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 	delete _townsScreen;
@@ -1167,7 +1176,38 @@ Common::Error ScummEngine::init() {
 			screenWidth *= _textSurfaceMultiplier;
 			screenHeight *= _textSurfaceMultiplier;
 		}
-		if (_game.features & GF_16BIT_COLOR
+		if (_game.features & GF_32BIT_COLOR) {
+#ifdef USE_RGB_COLOR
+			_outputPixelFormat = Graphics::PixelFormat(
+				4, // BytesPerPixel
+				8, 8, 8, 8, // {R,G,B,A}Bits
+				8, 16, 24, 0  // {R,G,B,A}Shift
+			);
+
+			if (_game.platform != Common::kPlatformFMTowns && _game.platform != Common::kPlatformPCEngine) {
+				initGraphics(screenWidth, screenHeight, screenWidth > 320, &_outputPixelFormat);
+				if (_outputPixelFormat != _system->getScreenFormat())
+					return Common::kUnsupportedColorMode;
+			} else {
+				Common::List<Graphics::PixelFormat> tryModes = _system->getSupportedFormats();
+				for (Common::List<Graphics::PixelFormat>::iterator g = tryModes.begin(); g != tryModes.end(); ++g) {
+					if (g->bytesPerPixel != 4 || g->aBits()) {
+						g = tryModes.reverse_erase(g);
+					} else if (*g == _outputPixelFormat) {
+						tryModes.clear();
+						tryModes.push_back(_outputPixelFormat);
+						break;
+					}
+				}
+
+				initGraphics(screenWidth, screenHeight, screenWidth > 320, tryModes);
+				if (_system->getScreenFormat().bytesPerPixel != 4)
+					return Common::kUnsupportedColorMode;
+			}
+#else
+			return Common::Error(Common::kUnsupportedColorMode, "32bit color support is required for this game");
+#endif
+		} else if (_game.features & GF_16BIT_COLOR
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 			|| _game.platform == Common::kPlatformFMTowns
 #endif
@@ -1318,7 +1358,10 @@ void ScummEngine::setupScumm() {
 
 	int maxHeapThreshold = -1;
 
-	if (_game.features & GF_16BIT_COLOR) {
+	if (_game.features & GF_32BIT_COLOR) {
+		// 32bit color games require double the memory, due to increased resource sizes.
+		maxHeapThreshold = 12 * 1024 * 1024;
+	} else if (_game.features & GF_16BIT_COLOR) {
 		// 16bit color games require double the memory, due to increased resource sizes.
 		maxHeapThreshold = 12 * 1024 * 1024;
 	} else if (_game.features & GF_NEW_COSTUMES) {
@@ -1421,6 +1464,8 @@ void ScummEngine::resetScumm() {
 	debug(9, "resetScumm");
 
 #ifdef USE_RGB_COLOR
+	if (_game.features & GF_32BIT_COLOR)
+		_32BitPalette = (uint32 *)calloc(512, sizeof(uint32));
 	if (_game.features & GF_16BIT_COLOR
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
 		|| (_game.platform == Common::kPlatformFMTowns)
@@ -2212,6 +2257,8 @@ load_game:
 		if (_game.version > 3)
 			CHARSET_1();
 
+		updatePalette();
+
 		scummLoop_handleDrawing();
 
 		scummLoop_handleActors();
@@ -2228,7 +2275,6 @@ load_game:
 		handleMouseOver(oldEgo != VAR(VAR_EGO));
 
 		// Render everything to the screen.
-		updatePalette();
 		drawDirtyScreenParts();
 
 		// FIXME / TODO: Try to move the following to scummLoop_handleSound or

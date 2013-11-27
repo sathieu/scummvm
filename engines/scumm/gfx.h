@@ -441,6 +441,13 @@ protected:
 public:
 	GdiHE16bit(ScummEngine *vm);
 };
+
+class GdiTrueColor : public Gdi {
+protected:
+	virtual void writeRoomColor(byte *dst, byte color) const;
+public:
+	GdiTrueColor(ScummEngine *vm);
+};
 #endif
 
 #ifndef DISABLE_TOWNS_DUAL_LAYER_MODE
