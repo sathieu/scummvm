@@ -58,6 +58,7 @@ MODULE_OBJS := \
 	resource.o \
 	room.o \
 	saveload.o \
+	se/file_pak.o \
 	script_v0.o \
 	script_v2.o \
 	script_v3.o \

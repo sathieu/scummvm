@@ -41,6 +41,7 @@
 #include "scumm/dialogs.h"
 #include "scumm/file.h"
 #include "scumm/file_nes.h"
+#include "scumm/se/file_pak.h"
 #include "scumm/imuse/imuse.h"
 #include "scumm/imuse_digi/dimuse.h"
 #include "scumm/smush/smush_mixer.h"
@@ -1127,6 +1128,21 @@ Common::Error ScummEngine::init() {
 
 			_fileHandle->close();
 
+#ifdef ENABLE_SCUMM_SE
+		} else if (_game.features & GF_PAKFILE) {
+			// We read data directly from .pak file instead of extracting it with
+			// external tool
+			assert(_game.id == GID_MONKEY || _game.id == GID_MONKEY2);
+			_fileHandle = new ScummPakFile();
+			_containerFile = _filenamePattern.pattern;
+			if (_game.id == GID_MONKEY) {
+				_filenamePattern.pattern = "monkey1.%03d";
+				_filenamePattern.genMethod = kGenDiskNum;
+			} else if (_game.id == GID_MONKEY2) {
+				_filenamePattern.pattern = "monkey2.%03d";
+				_filenamePattern.genMethod = kGenDiskNum;
+			}
+#endif
 		} else {
 			error("kGenUnchanged used with unsupported platform");
 		}
