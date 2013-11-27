@@ -156,7 +156,14 @@ enum GameFeatures {
 	 * SCUMM v5-v7 Mac games stored in a container file
 	 * Used to differentiate between m68k and PPC versions of Indy4
 	 */
-	GF_MAC_CONTAINER       = 1 << 16
+	GF_MAC_CONTAINER       = 1 << 16,
+
+	/** Special editon */
+	GF_SPECIAL_EDITION     = 1 << 17,
+
+	/** .pak file */
+	GF_PAKFILE             = 1 << 18
+
 };
 
 /* SCUMM Debug Channels */

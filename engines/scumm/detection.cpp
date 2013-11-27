@@ -1137,7 +1137,12 @@ Common::Error ScummMetaEngine::createInstance(OSystem *syst, Engine **engine) co
 		*engine = new ScummEngine_v4(syst, res);
 		break;
 	case 5:
-		*engine = new ScummEngine_v5(syst, res);
+#ifdef ENABLE_SCUMM_SE
+		if (res.game.features & GF_SPECIAL_EDITION)
+			error("Engine_SCUMM_create(): Special Edition not supported (yet)");
+		else
+#endif
+			*engine = new ScummEngine_v5(syst, res);
 		break;
 	case 6:
 		switch (res.game.heversion) {
@@ -1200,7 +1205,7 @@ Common::Error ScummMetaEngine::createInstance(OSystem *syst, Engine **engine) co
 const char *ScummMetaEngine::getName() const {
 	return "SCUMM ["
 
-#if defined(ENABLE_SCUMM_7_8) && defined(ENABLE_HE)
+#if defined(ENABLE_SCUMM_7_8) && defined(ENABLE_SCUMM_SE) && defined(ENABLE_HE)
 		"all games"
 #else
 
@@ -1208,6 +1213,9 @@ const char *ScummMetaEngine::getName() const {
 
 #if defined(ENABLE_SCUMM_7_8)
 		", v7 & v8 games"
+#endif
+#ifdef ENABLE_SCUMM_SE
+		", Special Edition games"
 #endif
 #if defined(ENABLE_HE)
 		", HE71+ games"

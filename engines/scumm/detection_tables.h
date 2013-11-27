@@ -142,6 +142,10 @@ static const PlainGameDescriptor gameDescriptions[] = {
 	{ "thinkerk", "Big Thinkers Kindergarten" },
 	{ "water", "Freddi Fish and Luther's Water Worries" },
 #endif
+#ifdef ENABLE_SCUMM_SE
+	{ "monkeyse", "The Secret of Monkey Island: Special Edition" },
+	{ "monkey2se", "Monkey Island 2: LeChuck's Revenge - Special Edition" },
+#endif
 	{ 0, 0 }
 };
 
@@ -415,6 +419,11 @@ static const GameSettings gameVariantsTable[] = {
 	{"", "HE 99",   0, GID_HEGAME, 6,  99, MDT_NONE, GF_USE_KEY, UNK, GUIO3(GUIO_NOLAUNCHLOAD, GUIO_NOMIDI, GUIO_NOASPECT)},
 	{"", "HE 100",  0, GID_HEGAME, 6, 100, MDT_NONE, GF_USE_KEY, UNK, GUIO3(GUIO_NOLAUNCHLOAD, GUIO_NOMIDI, GUIO_NOASPECT)},
 	{"", "HE 101",  0, GID_HEGAME, 6, 100, MDT_NONE, GF_USE_KEY, UNK, GUIO3(GUIO_NOLAUNCHLOAD, GUIO_NOMIDI, GUIO_NOASPECT)},
+#endif
+#ifdef ENABLE_SCUMM_SE
+	// Special editions
+	{"monkeyse",  "DVD", 0, GID_MONKEY,  5, 0, MDT_ADLIB, GF_SPECIAL_EDITION | GF_PAKFILE | GF_AUDIOTRACKS, UNK, GUIO2(GUIO_NOSPEECH, GUIO_NOMIDI)},
+	{"monkey2se", "DVD", 0, GID_MONKEY2, 5, 0, MDT_PCSPK | MDT_ADLIB | MDT_MIDI | MDT_PREFER_MT32, GF_SPECIAL_EDITION | GF_PAKFILE, UNK, GUIO1(GUIO_NOSPEECH)},
 #endif
 	{NULL, NULL, 0, 0, 0, MDT_NONE, 0, 0, UNK, 0}
 };
@@ -926,6 +935,10 @@ static const GameFilenamePattern gameFilenamesTable[] = {
 	{ "water", "water", kGenHEPC, UNK_LANG, Common::kPlatformWindows, 0 },
 	{ "water", "Water", kGenHEMac, Common::NL_NLD, Common::kPlatformMacintosh, 0 },
 	{ "water", "Water Worries", kGenHEMac, UNK_LANG, Common::kPlatformMacintosh, 0 },
+#endif
+#ifdef ENABLE_SCUMM_SE
+	{ "monkeyse",  "monkey1.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
+	{ "monkey2se", "monkey2.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
 #endif
 	{ NULL, NULL, kGenUnchanged, UNK_LANG, UNK, 0 }
 };
