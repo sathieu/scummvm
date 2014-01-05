@@ -56,7 +56,8 @@ enum {
 	GFX_HQ2X = 8,
 	GFX_HQ3X = 9,
 	GFX_TV2X = 10,
-	GFX_DOTMATRIX = 11
+	GFX_DOTMATRIX = 11,
+	GFX_HALF = 12
 };
 
 
@@ -214,7 +215,8 @@ protected:
 		AspectRatio desiredAspectRatio;
 
 		int mode;
-		int scaleFactor;
+		int scaleMultiplier;
+		int scaleDivider;
 
 		int screenWidth, screenHeight;
 		int overlayWidth, overlayHeight;

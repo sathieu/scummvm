@@ -39,6 +39,7 @@
 #include "graphics/fontman.h"
 #include "graphics/scaler.h"
 #include "graphics/scaler/aspect.h"
+#include "graphics/scaler/downscaler.h"
 #include "graphics/surface.h"
 #include "gui/EventRecorder.h"
 
@@ -59,6 +60,7 @@ static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
 	{"tv2x", "TV2x", GFX_TV2X},
 	{"dotmatrix", "DotMatrix", GFX_DOTMATRIX},
 #endif
+	{"downscaleallbyhalf", "DownscaleAllByHalf", GFX_HALF},
 	{0, 0, 0}
 };
 
@@ -163,13 +165,15 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 
 #if !defined(_WIN32_WCE) && !defined(__SYMBIAN32__) && defined(USE_SCALERS)
 	_videoMode.mode = GFX_DOUBLESIZE;
-	_videoMode.scaleFactor = 2;
+	_videoMode.scaleMultiplier = 2;
+	_videoMode.scaleDivider = 1;
 	_videoMode.aspectRatioCorrection = ConfMan.getBool("aspect_ratio");
 	_videoMode.desiredAspectRatio = getDesiredAspectRatio();
 	_scalerProc = Normal2x;
 #else // for small screen platforms
 	_videoMode.mode = GFX_NORMAL;
-	_videoMode.scaleFactor = 1;
+	_videoMode.scaleMultiplier = 1;
+	_videoMode.scaleDivider = 1;
 	_videoMode.aspectRatioCorrection = false;
 	_scalerProc = Normal1x;
 #endif
@@ -314,7 +318,8 @@ OSystem::TransactionError SurfaceSdlGraphicsManager::endGFXTransaction() {
 			errors |= OSystem::kTransactionModeSwitchFailed;
 
 			_videoMode.mode = _oldVideoMode.mode;
-			_videoMode.scaleFactor = _oldVideoMode.scaleFactor;
+			_videoMode.scaleMultiplier = _oldVideoMode.scaleMultiplier;
+			_videoMode.scaleDivider = _oldVideoMode.scaleDivider;
 #ifdef USE_RGB_COLOR
 		} else if (_videoMode.format != _oldVideoMode.format) {
 			errors |= OSystem::kTransactionFormatNotSupported;
@@ -494,50 +499,54 @@ bool SurfaceSdlGraphicsManager::setGraphicsMode(int mode) {
 	if (_oldVideoMode.setup && _oldVideoMode.mode == mode)
 		return true;
 
-	int newScaleFactor = 1;
+	int newScaleMultiplier = 1;
+	int newScaleDivider = 1;
 
 	switch (mode) {
 	case GFX_NORMAL:
-		newScaleFactor = 1;
+		newScaleMultiplier = 1;
 		break;
 #ifdef USE_SCALERS
 	case GFX_DOUBLESIZE:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_TRIPLESIZE:
-		newScaleFactor = 3;
+		newScaleMultiplier = 3;
 		break;
 
 	case GFX_2XSAI:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_SUPER2XSAI:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_SUPEREAGLE:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_ADVMAME2X:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_ADVMAME3X:
-		newScaleFactor = 3;
+		newScaleMultiplier = 3;
 		break;
 #ifdef USE_HQ_SCALERS
 	case GFX_HQ2X:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_HQ3X:
-		newScaleFactor = 3;
+		newScaleMultiplier = 3;
 		break;
 #endif
 	case GFX_TV2X:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 	case GFX_DOTMATRIX:
-		newScaleFactor = 2;
+		newScaleMultiplier = 2;
 		break;
 #endif // USE_SCALERS
+	case GFX_HALF:
+		newScaleDivider = 2;
+		break;
 
 	default:
 		warning("unknown gfx mode %d", mode);
@@ -545,13 +554,14 @@ bool SurfaceSdlGraphicsManager::setGraphicsMode(int mode) {
 	}
 
 	_transactionDetails.normal1xScaler = (mode == GFX_NORMAL);
-	if (_oldVideoMode.setup && _oldVideoMode.scaleFactor != newScaleFactor)
+	if (_oldVideoMode.setup && (_oldVideoMode.scaleMultiplier != newScaleMultiplier || _oldVideoMode.scaleDivider != newScaleDivider))
 		_transactionDetails.needHotswap = true;
 
 	_transactionDetails.needUpdatescreen = true;
 
 	_videoMode.mode = mode;
-	_videoMode.scaleFactor = newScaleFactor;
+	_videoMode.scaleMultiplier = newScaleMultiplier;
+	_videoMode.scaleDivider = newScaleDivider;
 
 	return true;
 }
@@ -602,6 +612,9 @@ void SurfaceSdlGraphicsManager::setGraphicsModeIntern() {
 		newScalerProc = DotMatrix;
 		break;
 #endif // USE_SCALERS
+	case GFX_HALF:
+		newScalerProc = DownscaleAllByHalf;
+		break;
 
 	default:
 		error("Unknown gfx mode %d", _videoMode.mode);
@@ -665,10 +678,11 @@ void SurfaceSdlGraphicsManager::initSize(uint w, uint h, const Graphics::PixelFo
 }
 
 int SurfaceSdlGraphicsManager::effectiveScreenHeight() const {
-	return _videoMode.scaleFactor *
+	return _videoMode.scaleMultiplier *
 				(_videoMode.aspectRatioCorrection
 					? real2Aspect(_videoMode.screenHeight)
-					: _videoMode.screenHeight);
+					: _videoMode.screenHeight)
+				/ _videoMode.scaleDivider;
 }
 
 static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &width, int &height) {
@@ -716,8 +730,8 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_forceFull = true;
 
 #if !defined(__MAEMO__) && !defined(DINGUX) && !defined(GPH_DEVICE) && !defined(LINUXMOTO) && !defined(OPENPANDORA)
-	_videoMode.overlayWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
-	_videoMode.overlayHeight = _videoMode.screenHeight * _videoMode.scaleFactor;
+	_videoMode.overlayWidth = _videoMode.screenWidth * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
+	_videoMode.overlayHeight = _videoMode.screenHeight * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
 
 	if (_videoMode.screenHeight != 200 && _videoMode.screenHeight != 400)
 		_videoMode.aspectRatioCorrection = false;
@@ -725,7 +739,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	if (_videoMode.aspectRatioCorrection)
 		_videoMode.overlayHeight = real2Aspect(_videoMode.overlayHeight);
 
-	_videoMode.hardwareWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
+	_videoMode.hardwareWidth = _videoMode.screenWidth * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
 	_videoMode.hardwareHeight = effectiveScreenHeight();
 // On GPH devices ALL the _videoMode.hardware... are setup in GPHGraphicsManager::loadGFXMode()
 #elif !defined(GPH_DEVICE)
@@ -860,7 +874,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 #endif
 
 	_eventSource->resetKeyboadEmulation(
-		_videoMode.screenWidth * _videoMode.scaleFactor - 1,
+		_videoMode.screenWidth * _videoMode.scaleMultiplier / _videoMode.scaleDivider - 1,
 		effectiveScreenHeight() - 1);
 
 	// Distinguish 555 and 565 mode
@@ -971,7 +985,7 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 	SDL_Surface *srcSurf, *origSurf;
 	int height, width;
 	ScalerProc *scalerProc;
-	int scale1;
+	int scaleMultiplier1, scaleDivider1;
 
 	// definitions not available for non-DEBUG here. (needed this to compile in SYMBIAN32 & linux?)
 #if defined(DEBUG) && !defined(WIN32) && !defined(_WIN32_WCE)
@@ -982,7 +996,12 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 	// If the shake position changed, fill the dirty area with blackness
 	if (_currentShakePos != _newShakePos ||
 		(_mouseNeedsRedraw && _mouseBackup.y <= _currentShakePos)) {
-		SDL_Rect blackrect = {0, 0, (Uint16)(_videoMode.screenWidth * _videoMode.scaleFactor), (Uint16)(_newShakePos * _videoMode.scaleFactor)};
+		SDL_Rect blackrect = {
+			0,
+			0,
+			(Uint16)(_videoMode.screenWidth * _videoMode.scaleMultiplier / _videoMode.scaleDivider),
+			(Uint16)(_newShakePos * _videoMode.scaleMultiplier / _videoMode.scaleDivider)
+		};
 
 		if (_videoMode.aspectRatioCorrection && !_overlayVisible)
 			blackrect.h = real2Aspect(blackrect.h - 1) + 1;
@@ -1032,7 +1051,8 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 		width = _videoMode.screenWidth;
 		height = _videoMode.screenHeight;
 		scalerProc = _scalerProc;
-		scale1 = _videoMode.scaleFactor;
+		scaleMultiplier1 = _videoMode.scaleMultiplier;
+		scaleDivider1 = _videoMode.scaleDivider;
 	} else {
 		origSurf = _overlayscreen;
 		srcSurf = _tmpscreen2;
@@ -1040,7 +1060,8 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 		height = _videoMode.overlayHeight;
 		scalerProc = Normal1x;
 
-		scale1 = 1;
+		scaleMultiplier1 = 1;
+		scaleDivider1 = 1;
 	}
 
 	// Add the area covered by the mouse cursor to the list of dirty rects if
@@ -1085,7 +1106,7 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 #ifdef USE_SCALERS
 			register int orig_dst_y = 0;
 #endif
-			register int rx1 = r->x * scale1;
+			register int rx1 = r->x * scaleMultiplier1 / scaleDivider1;
 
 			if (dst_y < height) {
 				dst_h = r->h;
@@ -1095,7 +1116,7 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 #ifdef USE_SCALERS
 				orig_dst_y = dst_y;
 #endif
-				dst_y = dst_y * scale1;
+				dst_y = dst_y * scaleMultiplier1 / scaleDivider1;
 
 				if (_videoMode.aspectRatioCorrection && !_overlayVisible)
 					dst_y = real2Aspect(dst_y);
@@ -1107,12 +1128,12 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 
 			r->x = rx1;
 			r->y = dst_y;
-			r->w = r->w * scale1;
-			r->h = dst_h * scale1;
+			r->w = r->w * scaleMultiplier1 / scaleDivider1;
+			r->h = dst_h * scaleMultiplier1 / scaleDivider1;
 
 #ifdef USE_SCALERS
 			if (_videoMode.aspectRatioCorrection && orig_dst_y < height && !_overlayVisible)
-				r->h = stretch200To240((uint8 *) _hwscreen->pixels, dstPitch, r->w, r->h, r->x, r->y, orig_dst_y * scale1);
+				r->h = stretch200To240((uint8 *) _hwscreen->pixels, dstPitch, r->w, r->h, r->x, r->y, orig_dst_y * scaleMultiplier1 / scaleDivider1);
 #endif
 		}
 		SDL_UnlockSurface(srcSurf);
@@ -1140,15 +1161,15 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 		if (_enableFocusRect && !_overlayVisible) {
 			int y = _focusRect.top + _currentShakePos;
 			int h = 0;
-			int x = _focusRect.left * scale1;
-			int w = _focusRect.width() * scale1;
+			int x = _focusRect.left * scaleMultiplier1 / scaleDivider1;
+			int w = _focusRect.width() * scaleMultiplier1 / scaleDivider1;
 
 			if (y < height) {
 				h = _focusRect.height();
 				if (h > height - y)
 					h = height - y;
 
-				y *= scale1;
+				y *= scaleMultiplier1 / scaleDivider1;
 
 				if (_videoMode.aspectRatioCorrection && !_overlayVisible)
 					y = real2Aspect(y);
@@ -1547,11 +1568,11 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 
 	// Since resolution could change, put mouse to adjusted position
 	// Fixes bug #1349059
-	x = _mouseCurState.x * _videoMode.scaleFactor;
+	x = _mouseCurState.x * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
 	if (_videoMode.aspectRatioCorrection)
-		y = real2Aspect(_mouseCurState.y) * _videoMode.scaleFactor;
+		y = real2Aspect(_mouseCurState.y) * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
 	else
-		y = _mouseCurState.y * _videoMode.scaleFactor;
+		y = _mouseCurState.y * _videoMode.scaleMultiplier / _videoMode.scaleDivider;
 
 	warpMouse(x, y);
 
@@ -1570,8 +1591,8 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 
 	// Since resolution could change, put mouse to adjusted position
 	// Fixes bug #1349059
-	x = _mouseCurState.x / _videoMode.scaleFactor;
-	y = _mouseCurState.y / _videoMode.scaleFactor;
+	x = _mouseCurState.x * _videoMode.scaleDivider / _videoMode.scaleMultiplier;
+	y = _mouseCurState.y * _videoMode.scaleDivider / _videoMode.scaleMultiplier;
 	if (_videoMode.aspectRatioCorrection)
 		y = aspect2Real(y);
 
@@ -1607,7 +1628,9 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #ifdef USE_SCALERS
 	if (_videoMode.aspectRatioCorrection)
 		stretch200To240((uint8 *)_overlayscreen->pixels, _overlayscreen->pitch,
-						_videoMode.overlayWidth, _videoMode.screenHeight * _videoMode.scaleFactor, 0, 0, 0);
+						_videoMode.overlayWidth,
+						_videoMode.screenHeight * _videoMode.scaleMultiplier / _videoMode.scaleDivider,
+						0, 0, 0);
 #endif
 	SDL_UnlockSurface(_tmpscreen);
 	SDL_UnlockSurface(_overlayscreen);
@@ -1722,7 +1745,9 @@ void SurfaceSdlGraphicsManager::warpMouse(int x, int y) {
 
 	if (_mouseCurState.x != x || _mouseCurState.y != y) {
 		if (!_overlayVisible)
-			SDL_WarpMouse(x * _videoMode.scaleFactor, y1 * _videoMode.scaleFactor);
+			SDL_WarpMouse(
+				x * _videoMode.scaleMultiplier / _videoMode.scaleDivider,
+				y1 * _videoMode.scaleMultiplier / _videoMode.scaleDivider);
 		else
 			SDL_WarpMouse(x, y1);
 
@@ -1866,21 +1891,23 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 	}
 
 	int rW, rH;
-	int cursorScale;
+	int cursorMultiplier, cursorDivider;
 
 	if (_cursorDontScale) {
 		// Don't scale the cursor at all if the user requests this behavior.
-		cursorScale = 1;
+		cursorMultiplier = 1;
+		cursorDivider = 1;
 	} else {
 		// Scale the cursor with the game screen scale factor.
-		cursorScale = _videoMode.scaleFactor;
+		cursorMultiplier = _videoMode.scaleMultiplier;
+		cursorDivider = _videoMode.scaleDivider;
 	}
 
 	// Adapt the real hotspot according to the scale factor.
-	rW = w * cursorScale;
-	rH = h * cursorScale;
-	_mouseCurState.rHotX = _mouseCurState.hotX * cursorScale;
-	_mouseCurState.rHotY = _mouseCurState.hotY * cursorScale;
+	rW = w * cursorMultiplier / cursorDivider;
+	rH = h * cursorMultiplier / cursorDivider;
+	_mouseCurState.rHotX = _mouseCurState.hotX * cursorMultiplier / cursorDivider;
+	_mouseCurState.rHotY = _mouseCurState.hotY * cursorMultiplier / cursorDivider;
 
 	// The virtual dimensions will be the same as the original.
 
@@ -1929,10 +1956,10 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		// If possible, use the same scaler for the cursor as for the rest of
 		// the game. This only works well with the non-blurring scalers so we
 		// actually only use the 1x, 2x and AdvMame scalers.
-		if (_videoMode.mode == GFX_DOUBLESIZE || _videoMode.mode == GFX_TRIPLESIZE)
+		if (_videoMode.mode == GFX_DOUBLESIZE || _videoMode.mode == GFX_TRIPLESIZE || _videoMode.mode == GFX_HALF)
 			scalerProc = _scalerProc;
 		else
-			scalerProc = scalersMagn[_videoMode.scaleFactor - 1];
+			scalerProc = scalersMagn[_videoMode.scaleMultiplier - 1];
 	} else {
 		scalerProc = Normal1x;
 	}
@@ -1992,20 +2019,22 @@ void SurfaceSdlGraphicsManager::drawMouse() {
 	}
 
 	SDL_Rect dst;
-	int scale;
+	int scaleMultiplier, scaleDivider;
 	int hotX, hotY;
 
 	dst.x = _mouseCurState.x;
 	dst.y = _mouseCurState.y;
 
 	if (!_overlayVisible) {
-		scale = _videoMode.scaleFactor;
+		scaleMultiplier = _videoMode.scaleMultiplier;
+		scaleDivider = _videoMode.scaleDivider;
 		dst.w = _mouseCurState.vW;
 		dst.h = _mouseCurState.vH;
 		hotX = _mouseCurState.vHotX;
 		hotY = _mouseCurState.vHotY;
 	} else {
-		scale = 1;
+		scaleMultiplier = 1;
+		scaleDivider = 1;
 		dst.w = _mouseCurState.rW;
 		dst.h = _mouseCurState.rH;
 		hotX = _mouseCurState.rHotX;
@@ -2030,8 +2059,8 @@ void SurfaceSdlGraphicsManager::drawMouse() {
 	if (_videoMode.aspectRatioCorrection && !_overlayVisible)
 		dst.y = real2Aspect(dst.y);
 
-	dst.x = scale * dst.x - _mouseCurState.rHotX;
-	dst.y = scale * dst.y - _mouseCurState.rHotY;
+	dst.x = dst.x * scaleMultiplier / scaleDivider - _mouseCurState.rHotX;
+	dst.y = dst.y * scaleMultiplier / scaleDivider - _mouseCurState.rHotY;
 	dst.w = _mouseCurState.rW;
 	dst.h = _mouseCurState.rH;
 
@@ -2164,7 +2193,7 @@ bool SurfaceSdlGraphicsManager::handleScalerHotkeys(Common::KeyCode key) {
 	}
 
 	int newMode = -1;
-	int factor = _videoMode.scaleFactor - 1;
+	int factor = _videoMode.scaleMultiplier - 1;
 	SDLKey sdlKey = (SDLKey)key;
 
 	// Increase/decrease the scale factor
@@ -2307,8 +2336,8 @@ void SurfaceSdlGraphicsManager::notifyVideoExpose() {
 
 void SurfaceSdlGraphicsManager::transformMouseCoordinates(Common::Point &point) {
 	if (!_overlayVisible) {
-		point.x /= _videoMode.scaleFactor;
-		point.y /= _videoMode.scaleFactor;
+		point.x = point.x * _videoMode.scaleDivider / _videoMode.scaleMultiplier;
+		point.y = point.y * _videoMode.scaleDivider / _videoMode.scaleMultiplier;
 		if (_videoMode.aspectRatioCorrection)
 			point.y = aspect2Real(point.y);
 	}
