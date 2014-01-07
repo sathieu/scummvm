@@ -175,7 +175,9 @@ protected:
 public:
 	ResourceManager_se(ScummEngine_se *vm);
 	~ResourceManager_se();
-
+protected:
+	bool openFile(const Common::String &filename);
+public:
 	void readIndexFile();
 	Room *getRoom(const Common::String &roomFile);
 	Room *getRoom(const uint32 roomNumber);

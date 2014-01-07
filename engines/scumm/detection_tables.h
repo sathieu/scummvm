@@ -424,6 +424,8 @@ static const GameSettings gameVariantsTable[] = {
 	// Special editions
 	{"monkeyse",  "DVD", 0, GID_MONKEY,  5, 0, MDT_ADLIB, GF_SPECIAL_EDITION | GF_PAKFILE | GF_32BIT_COLOR | GF_AUDIOTRACKS, UNK, GUIO2(GUIO_NOSPEECH, GUIO_NOMIDI)},
 	{"monkey2se", "DVD", 0, GID_MONKEY2, 5, 0, MDT_PCSPK | MDT_ADLIB | MDT_MIDI | MDT_PREFER_MT32, GF_SPECIAL_EDITION | GF_PAKFILE | GF_32BIT_COLOR, UNK, GUIO1(GUIO_NOSPEECH)},
+	{"monkeyse",  "unpacked", 0, GID_MONKEY,  5, 0, MDT_ADLIB, GF_SPECIAL_EDITION | GF_32BIT_COLOR | GF_AUDIOTRACKS, UNK, GUIO2(GUIO_NOSPEECH, GUIO_NOMIDI)},
+	{"monkey2se", "unpacked", 0, GID_MONKEY2, 5, 0, MDT_PCSPK | MDT_ADLIB | MDT_MIDI | MDT_PREFER_MT32, GF_SPECIAL_EDITION | GF_32BIT_COLOR, UNK, GUIO1(GUIO_NOSPEECH)},
 #endif
 	{NULL, NULL, 0, 0, 0, MDT_NONE, 0, 0, UNK, 0}
 };
@@ -939,6 +941,8 @@ static const GameFilenamePattern gameFilenamesTable[] = {
 #ifdef ENABLE_SCUMM_SE
 	{ "monkeyse",  "monkey1.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
 	{ "monkey2se", "monkey2.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
+	{ "monkeyse",  "monkey1_retail.scumm.xml", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, "unpacked" },
+	{ "monkey2se", "monkey2_retail.scumm.xml", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, "unpacked" },
 #endif
 	{ NULL, NULL, kGenUnchanged, UNK_LANG, UNK, 0 }
 };

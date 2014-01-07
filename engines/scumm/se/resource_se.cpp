@@ -43,7 +43,11 @@ void ScummEngine_se::readIndexFile() {
 
 // ResourceManager_se
 ResourceManager_se::ResourceManager_se(ScummEngine_se *vm) : _vm(vm), _fileHandle(0), _roomList(), _uiList(), _costumeList() {
-	_fileHandle = new ScummPakFile();
+	if (vm->_game.features & GF_PAKFILE) {
+		_fileHandle = new ScummPakFile();
+	} else {
+		_fileHandle = new ScummFile();
+	}
 }
 
 ResourceManager_se::~ResourceManager_se() {
@@ -51,18 +55,38 @@ ResourceManager_se::~ResourceManager_se() {
 	delete _fileHandle;
 }
 
+bool ResourceManager_se::openFile(const Common::String &filename) {
+	if (!_vm->_containerFile.empty()) {
+		_fileHandle->close();
+		if (!_fileHandle->open(_vm->_containerFile)) {
+			error("Couldn't open container file '%s'", _vm->_containerFile.c_str());
+		}
+
+		if (!_fileHandle->openSubFile(filename)) {
+			warning("Could not find file %s in container file", filename.c_str());
+			return false;
+		}
+	} else {
+		_fileHandle->close();
+		if (!_fileHandle->open(filename)) {
+			warning("Could not find file %s", filename.c_str());
+			return false;
+		}
+	}
+	return true;
+}
+
 void ResourceManager_se::readIndexFile() {
-	const char *SEIndexFile;
+	Common::String SEIndexFile;
 	if (_vm->_game.id == GID_MONKEY)
 		SEIndexFile = "monkey1_retail.scumm.xml";
 	else if (_vm->_game.id == GID_MONKEY2)
 		SEIndexFile = "monkey2_retail.scumm.xml";
 	else
 		error("Unsupported game id '%i'", _vm->_game.id);
-	if (!_fileHandle->open(_vm->_containerFile))
-		error("Couldn't open container file '%s'", _vm->_containerFile.c_str());
-	if (!_fileHandle->openSubFile(SEIndexFile))
-		error("Could not find Special Edition index %s", SEIndexFile);
+
+	if (!openFile(SEIndexFile))
+		error("Could not open Special Edition index %s", SEIndexFile.c_str());
 
 	_roomCount = _fileHandle->readUint32LE();
 	_roomHeaderAddress = _fileHandle->readAbsolutePositionUint32LE();
@@ -165,8 +189,9 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 	_staticSpriteList(), _spriteList(), _objectList(), _extraSpriteList(),
 	_spritesLoaded(false)
 	{
-	if (!_resSE->_fileHandle->openSubFile(roomFile))
-		error("Could not find file %s in container", roomFile.c_str());
+	if (!_resSE->openFile(roomFile))
+		error("Could not open room file %s", roomFile.c_str());
+
 	// read header
 	_identifier = _resSE->_fileHandle->readUint32LE();
 	_nameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
