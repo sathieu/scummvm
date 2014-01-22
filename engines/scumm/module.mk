@@ -58,7 +58,9 @@ MODULE_OBJS := \
 	resource.o \
 	room.o \
 	saveload.o \
+	se/costume_se.o \
 	se/file_pak.o \
+	se/gfx_se.o \
 	se/input_se.o \
 	se/resource_se.o \
 	se/room_se.o \

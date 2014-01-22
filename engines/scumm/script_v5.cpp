@@ -1675,6 +1675,10 @@ void ScummEngine_v5::o5_roomOps() {
 			a = getVarOrDirectWord(PARAM_1);
 			b = getVarOrDirectWord(PARAM_2);
 		}
+		if (_game.features & GF_SPECIAL_EDITION) {
+			assert(a == 0);
+			b = MIN(b * 6, 1080); // FIXME
+		}
 		initScreens(a, b);
 		break;
 	case 4:		// SO_ROOM_PALETTE

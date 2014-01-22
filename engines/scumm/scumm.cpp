@@ -37,6 +37,7 @@
 #include "scumm/akos.h"
 #include "scumm/charset.h"
 #include "scumm/costume.h"
+#include "scumm/se/costume_se.h"
 #include "scumm/debugger.h"
 #include "scumm/dialogs.h"
 #include "scumm/file.h"
@@ -548,6 +549,9 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	} else if (_game.platform == Common::kPlatformNES) {
 		_screenWidth = 256;
 		_screenHeight = 240;
+	} else if (_game.features & GF_SPECIAL_EDITION) {
+		_screenWidth = 1920;
+		_screenHeight = 1080;
 	} else {
 		_screenWidth = 320;
 		_screenHeight = 200;
@@ -586,7 +590,7 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 #ifndef DISABLE_HELP
 	// Create custom GMM dialog providing a help subdialog
 	assert(!_mainMenuDialog);
-	_mainMenuDialog = new ScummMenuDialog(this);
+	//_mainMenuDialog = new ScummMenuDialog(this);
 #endif
 }
 
@@ -1458,6 +1462,11 @@ void ScummEngine::setupCostumeRenderer() {
 		_costumeRenderer = new PCEngineCostumeRenderer(this);
 		_costumeLoader = new ClassicCostumeLoader(this);
 #endif
+#ifdef ENABLE_SCUMM_SE
+	} else if (_game.features & GF_SPECIAL_EDITION) {
+		_costumeRenderer = new SpecialEditionCostumeRenderer(this);
+		_costumeLoader = new SpecialEditionCostumeLoader(this);
+#endif
 	} else {
 		_costumeRenderer = new ClassicCostumeRenderer(this);
 		_costumeLoader = new ClassicCostumeLoader(this);
@@ -1499,6 +1508,8 @@ void ScummEngine::resetScumm() {
 		initScreens(16, 152);
 	} else if (_game.version >= 7 || _game.heversion >= 71) {
 		initScreens(0, _screenHeight);
+	} else if (_game.features & GF_SPECIAL_EDITION) {
+		initScreens(0, 1070);
 	} else {
 		initScreens(16, 144);
 	}

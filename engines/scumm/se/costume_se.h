@@ -8,48 +8,36 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
-
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
  */
 
-#ifndef SCUMM_SE_H
-#define SCUMM_SE_H
+#ifndef SCUMM_COSTUME_SE_H
+#define SCUMM_COSTUME_SE_H
 
-#ifdef ENABLE_SCUMM_SE
-
-#include "scumm/scumm_v5.h"
-#include "scumm/se/resource_se.h"
+#include "scumm/costume.h"
 
 namespace Scumm {
-
-class ScummEngine_se : public ScummEngine_v5 {
-protected:
-	ResourceManager_se *_resSE;
-protected:
-	virtual void setupRoomSubBlocks();
-	virtual void readIndexFile();
-
-	virtual void redrawBGAreas();
+class SpecialEditionCostumeLoader : public ClassicCostumeLoader {
 public:
-	ScummEngine_se(OSystem *syst, const DetectorResult &dr);
-	~ScummEngine_se();
-
-	void setClassicMode(bool mode);
-	void processKeyboard(Common::KeyState lastKeyHit);
-	ResourceManager_se *getResourceManagerSE() { return _resSE; }
+	SpecialEditionCostumeLoader(ScummEngine *vm) : ClassicCostumeLoader(vm) {}
+	void loadCostume(int id);
 };
 
+class SpecialEditionCostumeRenderer : public ClassicCostumeRenderer {
+protected:
+	byte drawLimb(const Actor *actor, int limb);
+public:
+	SpecialEditionCostumeRenderer(ScummEngine *vm) : ClassicCostumeRenderer(vm) {}
+};
 
 } // End of namespace Scumm
-
-#endif
 
 #endif

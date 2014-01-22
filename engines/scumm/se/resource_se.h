@@ -22,6 +22,8 @@
 #ifndef SCUMM_RESOURCE_SE_H
 #define SCUMM_RESOURCE_SE_H
 
+#include "scumm/se/costume_se.h"
+
 namespace Scumm {
 
 #ifdef ENABLE_SCUMM_SE
@@ -99,6 +101,8 @@ public:
 			uint32 height;
 			uint32 textureFileNameAddress;
 			Common::String textureFileName;
+			//
+			Graphics::Surface surface;
 		};
 		struct sprite {
 			uint32 textureFileNameAddress;
@@ -110,6 +114,8 @@ public:
 			float offsetY;
 			uint32 layer;
 			Common::String textureFileName;
+			//
+			Graphics::Surface surface;
 		};
 		struct object {
 			uint32 objectAddress1;
@@ -133,8 +139,10 @@ public:
 
 		uint32 _identifier;
 		uint32 _nameAddress;
+	public:
 		uint32 _roomWidth;
 		uint32 _roomHeight;
+	protected:
 		uint32 _staticSpriteHeaderCount;
 		uint32 _staticSpriteHeaderAddress;
 		uint32 _spriteHeaderCount;
@@ -161,13 +169,111 @@ public:
 		Common::Array< Common::Array<sprite> > _spriteList;
 		Common::Array< Common::Array<object> > _objectList;
 		Common::Array< Common::Array<staticSprite> > _extraSpriteList;
+		bool _spritesLoaded;
+
+		void drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList);
 	public:
 		Room(ResourceManager_se *resSE, const Common::String &roomFile);
 		const Common::String getRoomFile() { return _roomFile; }
+		void loadSprites();
+		void drawBG(ScummEngine_se *vm, VirtScreenNumber virt);
 	};
 	friend class Room;
 	// Costume
 	class Costume {
+	protected:
+		enum TextureFlags {
+			TF_EXISTS = 1,
+			TF_MIRROR_EXISTS = 2
+		};
+
+		struct texture {
+			uint32 textureSpriteCount;
+			uint32 filenameAddress;
+			Common::String filename;
+			byte flags[256]; // TextureFlags
+			Graphics::Surface surface[256];
+			Graphics::Surface mirroredSurface[256];
+		};
+		struct frame {
+			uint32 spriteIdentitier;
+			uint32 unknown2;
+			uint32 unknown3;
+		};
+		struct animation {
+			uint32 spriteGroupIdentitier;
+			uint32 unknown2;
+			uint32 frameCount;
+			uint32 frameAddress;
+			Common::Array<struct frame> frameList;
+		};
+		struct animationGroup {
+			uint32 nameAddress;
+			uint32 identifier;
+			uint32 animationCount;
+			uint32 animationAddress;
+			Common::String name;
+			Common::Array<struct animation> animationList;
+		};
+		struct sprite {
+			uint32 textureNumber;
+			uint32 textureX;
+			uint32 textureY;
+			uint32 textureWidth;
+			uint32 textureHeight;
+			uint32 screenX;
+			uint32 screenY;
+			uint32 unknown8;
+			uint32 unknown9;
+			uint32 unknown10;
+		};
+		struct spriteGroup {
+			uint32 identifier;
+			uint32 unknown2;
+			uint32 spriteCount;
+			uint32 spriteAddress;
+			Common::Array<struct sprite> spriteList;
+		};
+		struct pathPoint {
+			uint16 unknown1;
+			uint32 unknown2;
+			uint32 unknown3;
+		};
+
+		ResourceManager_se *_resSE;
+		Common::String _costumeFile;
+
+		uint32 _identifier;
+		uint32 _nameAddress;
+		uint32 _textureHeaderCount;
+		uint32 _textureHeaderAddress;
+		uint32 _animationHeaderCount;
+		uint32 _animationHeaderAddress;
+		uint32 _unknown7;
+		uint32 _spriteHeaderCount;
+		uint32 _spriteHeaderAddress;
+		uint32 _unknown10;
+		uint32 _pathPointCount;
+		uint32 _pathPointAddress;
+		uint32 _unknown13;
+		uint32 _unknown14;
+		uint32 _unknown15;
+		uint32 _unknown16;
+		uint32 _unknown17;
+		uint32 _unknown18;
+		uint32 _unknown19;
+		uint32 _unknown20;
+		Common::String _name;
+
+		Common::Array<struct texture> _textureList;
+		Common::Array<struct animationGroup> _animationGroupList;
+		Common::Array<struct spriteGroup> _spriteGroupList;
+		Common::Array<struct pathPoint> _pathPointList;
+	public:
+		Costume(ResourceManager_se *resSE, const Common::String &costumeFile);
+		const Common::String getCostumeFile() { return _costumeFile; }
+		const Graphics::Surface getTexture(uint32 index, bool mirror, byte scale);
+		const Graphics::Surface getSurface(const Common::String &animationGroupName, const uint32 animationGroupIndex, const uint32 animationIndex, const uint32 frameIndex, const byte scale);
 	};
 protected:
 	Common::List<Room> _roomCache;
@@ -182,6 +288,7 @@ public:
 	Room *getRoom(const Common::String &roomFile);
 	Room *getRoom(const uint32 roomNumber);
 	Costume *getCostume(const Common::String &costumeFile);
+	Costume *getCostume(const uint32 costumeNumber);
 };
 #endif
 

@@ -171,6 +171,24 @@ ResourceManager_se::Room *ResourceManager_se::getRoom(const uint32 roomNumber) {
 	return getRoom(_roomList[roomNumber].name);
 }
 
+ResourceManager_se::Costume *ResourceManager_se::getCostume(const Common::String &costumeFile) {
+	for (Common::List<Costume>::iterator
+			x = _costumeCache.begin(); x != _costumeCache.end(); ++x) {
+		if (x->getCostumeFile().equals(costumeFile))
+			return &*x;
+	}
+	ResourceManager_se::Costume *costume = new ResourceManager_se::Costume(this, costumeFile);
+	_costumeCache.push_back(*costume);
+	return costume;
+}
+
+ResourceManager_se::Costume *ResourceManager_se::getCostume(const uint32 costumeNumber) {
+	if (costumeNumber >= _costumeCount) {
+		error("Unable to get out of bound SE costume");
+	}
+	return getCostume(_costumeList[costumeNumber].name);
+}
+
 // ResourceManager_se::Room
 
 /*
@@ -416,6 +434,163 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 		_resSE->_fileHandle->read(h->data, h->unknown5Size);
 	}
 }
+
+// ResourceManager_se::Costume
+
+/*
+ * This function is based on Monkey Island SE Inspector
+ * by Robin Theilade (License: Public Domain).
+ *
+ * Original code at:
+ * http://sourceforge.net/p/mi1sexmlparser/code/43/tree/trunk/MonkeyIsland1SpecialEditionXmlParser/Formats/Costumes/Parser.cs
+ *
+ * Further enhancements have been done.
+ */
+ResourceManager_se::Costume::Costume(ResourceManager_se *resSE, const Common::String &costumeFile)
+	: _resSE(resSE), _costumeFile(costumeFile),
+	_textureList(), _animationGroupList(), _spriteGroupList(),
+	_pathPointList()
+	{
+	if (!_resSE->openFile(costumeFile))
+		error("Could not open costume file %s", costumeFile.c_str());
+
+	// read header
+	_identifier = _resSE->_fileHandle->readUint32LE();
+	_nameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	_textureHeaderCount = _resSE->_fileHandle->readUint32LE();
+	_textureHeaderAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	_animationHeaderCount = _resSE->_fileHandle->readUint32LE();
+	_animationHeaderAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	_unknown7 = _resSE->_fileHandle->readUint32LE();
+	_spriteHeaderCount = _resSE->_fileHandle->readUint32LE();
+	_spriteHeaderAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	_unknown10 = _resSE->_fileHandle->readUint32LE();
+	_pathPointCount = _resSE->_fileHandle->readUint32LE();
+	_pathPointAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	_unknown13 = _resSE->_fileHandle->readUint32LE();
+	_unknown14 = _resSE->_fileHandle->readUint32LE();
+	_unknown15 = _resSE->_fileHandle->readUint32LE();
+	_unknown16 = _resSE->_fileHandle->readUint32LE();
+	_unknown17 = _resSE->_fileHandle->readUint32LE();
+	_unknown18 = _resSE->_fileHandle->readUint32LE();
+	_unknown19 = _resSE->_fileHandle->readUint32LE();
+	_unknown20 = _resSE->_fileHandle->readUint32LE();
+	_name = _resSE->_fileHandle->readPadded16String();
+
+	// read texture header list
+	_resSE->_fileHandle->seek(_textureHeaderAddress, SEEK_SET);
+	_textureList.reserve(_textureHeaderCount);
+	for(uint32 index = 0; index < _textureHeaderCount; index++) {
+		struct texture h;
+		memset(&h, 0, sizeof(h));
+		h.textureSpriteCount = _resSE->_fileHandle->readUint32LE();
+		h.filenameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		h.filename.clear();
+		_textureList.push_back(h);
+	}
+
+	// read animation header list
+	_resSE->_fileHandle->seek(_animationHeaderAddress, SEEK_SET);
+	_animationGroupList.reserve(_animationHeaderCount);
+	for(uint32 index = 0; index < _animationHeaderCount; index++) {
+		struct animationGroup h;
+		h.nameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		h.identifier = _resSE->_fileHandle->readUint32LE();
+		h.animationCount = _resSE->_fileHandle->readUint32LE();
+		h.animationAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		h.name.clear();
+		h.animationList.clear();
+		_animationGroupList.push_back(h);
+	}
+
+	// read sprite header list
+	_resSE->_fileHandle->seek(_spriteHeaderAddress, SEEK_SET);
+	_spriteGroupList.reserve(_spriteHeaderCount);
+	for(uint32 index = 0; index < _spriteHeaderCount; index++) {
+		struct spriteGroup h;
+		h.identifier = _resSE->_fileHandle->readUint32LE();
+		h.unknown2 = _resSE->_fileHandle->readUint32LE();
+		h.spriteCount = _resSE->_fileHandle->readUint32LE();
+		h.spriteAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		h.spriteList.clear();
+		_spriteGroupList.push_back(h);
+	}
+
+	// read path point list
+	_resSE->_fileHandle->seek(_pathPointAddress, SEEK_SET);
+	_pathPointList.reserve(_pathPointCount);
+	for(uint32 index = 0; index < _pathPointCount; index++) {
+		struct pathPoint p;
+		p.unknown1 = _resSE->_fileHandle->readUint32LE();
+		p.unknown2 = _resSE->_fileHandle->readUint32LE();
+		p.unknown3 = _resSE->_fileHandle->readUint32LE();
+		_pathPointList.push_back(p);
+	}
+
+	// read texture filenames
+	for(uint32 index = 0; index < _textureList.size(); index++ ) {
+		struct texture *h = &_textureList[index];
+		_resSE->_fileHandle->seek(h->filenameAddress, SEEK_SET);
+		h->filename = _resSE->_fileHandle->readPadded16String();
+	}
+
+	// read animation names and frameHeader
+	for(uint32 index = 0; index < _animationGroupList.size(); index++ ) {
+		struct animationGroup *h = &_animationGroupList[index];
+		_resSE->_fileHandle->seek(h->nameAddress, SEEK_SET);
+		h->name = _resSE->_fileHandle->readPadded16String();
+		_resSE->_fileHandle->seek(h->animationAddress, SEEK_SET);
+		h->animationList.reserve(h->animationCount);
+		for(uint32 index2 = 0; index2 < h->animationCount; index2++ ) {
+			struct animation a;
+			a.spriteGroupIdentitier = _resSE->_fileHandle->readUint32LE();
+			a.unknown2 = _resSE->_fileHandle->readUint32LE();
+			a.frameCount = _resSE->_fileHandle->readUint32LE();
+			a.frameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+			a.frameList.clear();
+			h->animationList.push_back(a);
+		}
+	}
+
+	// read sprite list
+	for(uint32 index = 0; index < _spriteGroupList.size(); index++) {
+		struct spriteGroup *sh = &_spriteGroupList[index];
+		sh->spriteList.reserve(sh->spriteCount);
+		_resSE->_fileHandle->seek(sh->spriteAddress, SEEK_SET);
+		for(uint32 index2 = 0; index2 < sh->spriteCount; index2++ ) {
+			struct sprite s;
+			s.textureNumber = _resSE->_fileHandle->readUint32LE();
+			s.textureX = _resSE->_fileHandle->readUint32LE();
+			s.textureY = _resSE->_fileHandle->readUint32LE();
+			s.textureWidth = _resSE->_fileHandle->readUint32LE();
+			s.textureHeight = _resSE->_fileHandle->readUint32LE();
+			s.screenX = _resSE->_fileHandle->readUint32LE();
+			s.screenY = _resSE->_fileHandle->readUint32LE();
+			s.unknown8 = _resSE->_fileHandle->readUint32LE();
+			s.unknown9 = _resSE->_fileHandle->readUint32LE();
+			s.unknown10 = _resSE->_fileHandle->readUint32LE();
+			sh->spriteList.push_back(s);
+		}
+	}
+
+	// read animation frame list
+	for(uint32 index = 0; index < _animationGroupList.size(); index++) {
+		struct animationGroup *h = &_animationGroupList[index];
+		for(uint32 index2 = 0; index2 < h->animationList.size(); index2++ ) {
+			struct animation *a = &h->animationList[index2];
+			_resSE->_fileHandle->seek(a->frameAddress, SEEK_SET);
+			a->frameList.reserve(a->frameCount);
+			for(uint32 index3 = 0; index3 < a->frameCount; index3++ ) {
+				struct frame f;
+				f.spriteIdentitier =  _resSE->_fileHandle->readUint32LE();
+				f.unknown2 = _resSE->_fileHandle->readUint32LE();
+				f.unknown3 = _resSE->_fileHandle->readUint32LE();
+				a->frameList.push_back(f);
+			}
+		}
+	}
+}
+
 #endif
 
 } // End of namespace Scumm

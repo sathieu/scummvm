@@ -43,7 +43,7 @@ public:
 		_id(-1), _baseptr(0), _animCmds(0), _dataOffsets(0), _palette(0),
 		_frameOffsets(0), _numColors(0), _numAnim(0), _format(0), _mirror(false) {}
 
-	void loadCostume(int id);
+	virtual void loadCostume(int id);
 	void costumeDecodeData(Actor *a, int frame, uint usemask);
 	byte increaseAnims(Actor *a);
 
@@ -145,7 +145,7 @@ public:
 	void setCostume(int costume, int shadow);
 
 protected:
-	byte drawLimb(const Actor *a, int limb);
+	virtual byte drawLimb(const Actor *a, int limb);
 };
 
 } // End of namespace Scumm
