@@ -165,7 +165,10 @@ enum GameFeatures {
 	GF_PAKFILE             = 1 << 18,
 
 	/** SE games with 32 bit color */
-	GF_32BIT_COLOR         = 1 << 19
+	GF_32BIT_COLOR         = 1 << 19,
+
+	/** SE games in classic mode (set at runtime) */
+	GF_CLASSIC_MODE         = 1 << 20
 
 };
 

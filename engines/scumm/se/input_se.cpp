@@ -20,30 +20,26 @@
  *
  */
 
+#include "common/keyboard.h"
 #include "scumm/se/scumm_se.h"
 
 namespace Scumm {
 
 #ifdef ENABLE_SCUMM_SE
 
-ScummEngine_se::ScummEngine_se(OSystem *syst, const DetectorResult &dr)
-       : ScummEngine_v5(syst, dr) {
+void ScummEngine_se::processKeyboard(Common::KeyState lastKeyHit) {
+	// Fall back to default behavior
+	ScummEngine::processKeyboard(lastKeyHit);
+
+	// Switch Classic mode
+	if (lastKeyHit.keycode == Common::KEYCODE_F10 && lastKeyHit.hasFlags(0))
+		setClassicMode(!(_game.features & GF_CLASSIC_MODE));
+	if (lastKeyHit.keycode == Common::KEYCODE_PAGEUP && lastKeyHit.hasFlags(0))
+		setClassicMode(true);
+	if (lastKeyHit.keycode == Common::KEYCODE_PAGEDOWN && lastKeyHit.hasFlags(0))
+		setClassicMode(false);
 }
 
-ScummEngine_se::~ScummEngine_se() {
-}
-
-void ScummEngine_se::setClassicMode(bool mode) {
-	if (mode) {
-		if (_game.features & GF_CLASSIC_MODE)
-			return;
-		_game.features |= GF_CLASSIC_MODE;
-	} else {
-		if (!(_game.features & GF_CLASSIC_MODE))
-			return;
-		_game.features &= ~GF_CLASSIC_MODE;
-	}
-}
 #endif
 
 } // End of namespace Scumm

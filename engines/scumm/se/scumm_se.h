@@ -33,6 +33,9 @@ class ScummEngine_se : public ScummEngine_v5 {
 public:
 	ScummEngine_se(OSystem *syst, const DetectorResult &dr);
 	~ScummEngine_se();
+
+	void setClassicMode(bool mode);
+	void processKeyboard(Common::KeyState lastKeyHit);
 };
 
 
