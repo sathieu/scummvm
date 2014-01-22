@@ -20,6 +20,7 @@
  *
  */
 
+#include "util.h"
 #include "scumm/se/scumm_se.h"
 
 namespace Scumm {
@@ -36,15 +37,26 @@ ScummEngine_se::~ScummEngine_se() {
 }
 
 void ScummEngine_se::setClassicMode(bool mode) {
-	if (mode) {
+	if (mode) { // Go to classic mode
 		if (_game.features & GF_CLASSIC_MODE)
 			return;
 		_game.features |= GF_CLASSIC_MODE;
-	} else {
+		_screenWidth = 320;
+		_screenHeight = 200;
+		initGraphics(_screenWidth, _screenHeight, (_screenWidth > 320), &_outputPixelFormat);
+		_outputPixelFormat = _system->getScreenFormat();
+		initScreens(16, 144);
+	} else { // Go to SE mode
 		if (!(_game.features & GF_CLASSIC_MODE))
 			return;
 		_game.features &= ~GF_CLASSIC_MODE;
+		_screenWidth = 1920;
+		_screenHeight = 1080;
+		initGraphics(_screenWidth, _screenHeight, false, &_outputPixelFormat);
+		_outputPixelFormat = _system->getScreenFormat();
+		initScreens(0, 1070);
 	}
+	_fullRedraw = true;
 }
 #endif
 

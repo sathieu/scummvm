@@ -238,7 +238,7 @@ public:
 		if (_vm->_game.version <= 2) {
 			p.x *= V12_X_MULTIPLIER;
 			p.y *= V12_Y_MULTIPLIER;
-		} else if (_vm->_game.features & GF_SPECIAL_EDITION) {
+		} else if ((_vm->_game.features & GF_SPECIAL_EDITION) && !(_vm->_game.features & GF_CLASSIC_MODE)) {
 			p.x /= 5;
 			p.y /= 5;
 		}

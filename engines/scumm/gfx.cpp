@@ -666,6 +666,8 @@ void ScummEngine::drawStripToScreen(VirtScreen *vs, int x, int width, int top, i
 		} else
 #endif
 		if (_outputPixelFormat.bytesPerPixel == 4) {
+			assert(x < _textSurface.w);
+			assert(y < _textSurface.h);
 			const byte *srcPtr = (const byte *)src;
 			const byte *textPtr = (byte *)_textSurface.getBasePtr(x * m, y * m);
 			byte *dstPtr = _compositeBuf;

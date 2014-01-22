@@ -25,6 +25,7 @@
 
 #ifdef ENABLE_SCUMM_SE
 
+#include "graphics/pixelformat.h"
 #include "scumm/scumm_v5.h"
 #include "scumm/se/resource_se.h"
 
