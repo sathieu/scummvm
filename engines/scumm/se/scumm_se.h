@@ -26,10 +26,16 @@
 #ifdef ENABLE_SCUMM_SE
 
 #include "scumm/scumm_v5.h"
+#include "scumm/se/resource_se.h"
 
 namespace Scumm {
 
 class ScummEngine_se : public ScummEngine_v5 {
+protected:
+	ResourceManager_se *_resSE;
+protected:
+	virtual void setupRoomSubBlocks();
+	virtual void readIndexFile();
 public:
 	ScummEngine_se(OSystem *syst, const DetectorResult &dr);
 	~ScummEngine_se();

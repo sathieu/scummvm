@@ -206,6 +206,28 @@ public:
 	}
 
 	/**
+	 * Read a string by blocks of 16 characters from the stream and return it.
+	 * Performs no error checking. The return value is undefined
+	 * if a read error occurred (for which client code can check by
+	 * calling err() and eos() ).
+	 * Used in Monkey Island Special Edition games
+	 */
+	String readPadded16String() {
+		String str;
+		char buf[17];
+		do {
+			memset(buf, 0, sizeof(buf));
+			if (!read(buf, 16))
+				break;
+			str += buf;
+		} while  (buf[15] != '\0');
+
+		return str;
+	}
+
+
+
+	/**
 	 * Read a signed byte from the stream and return it.
 	 * Performs no error checking. The return value is undefined
 	 * if a read error occurred (for which client code can check by
@@ -408,6 +430,23 @@ public:
 	 * err() or eos() to determine whether an exception occurred.
 	 */
 	virtual String readLine();
+
+	/**
+	 * Read an unsigned 32-bit word stored in little endian (LSB first) order
+	 * from the stream and return it added to the current position if not zero.
+	 * Performs no error checking. The return value is undefined
+	 * if a read error occurred (for which client code can check by
+	 * calling err() and eos() ).
+	 * Used in Monkey Island Special Edition games
+	 */
+	uint32 readAbsolutePositionUint32LE() {
+		uint32 val = readUint32LE();
+		if (val)
+			return val + pos() - 4;
+		else
+			return 0;
+	}
+
 };
 
 /**

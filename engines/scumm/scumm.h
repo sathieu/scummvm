@@ -384,6 +384,9 @@ class ScummEngine : public Engine {
 	friend class CharsetRenderer;
 	friend class CharsetRendererTownsClassic;
 	friend class ResourceManager;
+#ifdef ENABLE_SCUMM_SE
+	friend class ResourceManager_se;
+#endif
 
 public:
 	/* Put often used variables at the top.

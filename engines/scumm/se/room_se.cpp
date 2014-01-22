@@ -21,31 +21,20 @@
  */
 
 #include "scumm/se/scumm_se.h"
+#include "scumm/se/resource_se.h"
 
 namespace Scumm {
 
 #ifdef ENABLE_SCUMM_SE
 
-ScummEngine_se::ScummEngine_se(OSystem *syst, const DetectorResult &dr)
-	: ScummEngine_v5(syst, dr) {
-	_resSE = new ResourceManager_se(this);
-}
+void ScummEngine_se::setupRoomSubBlocks() {
+	ScummEngine::setupRoomSubBlocks();
 
-ScummEngine_se::~ScummEngine_se() {
-	delete _resSE;
-}
-
-void ScummEngine_se::setClassicMode(bool mode) {
-	if (mode) {
-		if (_game.features & GF_CLASSIC_MODE)
-			return;
-		_game.features |= GF_CLASSIC_MODE;
-	} else {
-		if (!(_game.features & GF_CLASSIC_MODE))
-			return;
-		_game.features &= ~GF_CLASSIC_MODE;
+	if (_game.features & GF_CLASSIC_MODE) {
+		return;
 	}
 }
+
 #endif
 
 } // End of namespace Scumm
