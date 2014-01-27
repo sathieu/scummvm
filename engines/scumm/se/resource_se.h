@@ -275,9 +275,48 @@ public:
 		const Graphics::Surface getTexture(uint32 index, bool mirror, byte scale);
 		const Graphics::Surface getSurface(const Common::String &animationGroupName, const uint32 animationGroupIndex, const uint32 animationIndex, const uint32 frameIndex, const byte scale);
 	};
+	// Ui
+	class Ui {
+	protected:
+		ResourceManager_se *_resSE;
+		Common::String _uiFile;
+
+		struct staticSprite {
+			uint32 x;
+			uint32 y;
+			uint32 width;
+			uint32 height;
+			uint32 filenameAddress;
+			Common::String filename;
+		};
+		struct staticSpriteGroup {
+			uint32 unknown1;
+			uint32 width;
+			uint32 height;
+			uint32 staticSpriteCount;
+			uint32 staticSpriteAddress;
+			Common::Array<struct staticSprite> staticSpriteList;
+		};
+		struct texture {
+			uint32 unknown1;
+			uint32 filenameAddress;
+			uint32 textureX;
+			uint32 textureY;
+			uint32 textureWidth;
+			uint32 textureHeight;
+			Common::String filename;
+		};
+
+		Common::Array<struct staticSpriteGroup> _staticSpriteGroupList;
+		Common::Array<struct texture> _textureList;
+	public:
+		Ui(ResourceManager_se *resSE, const Common::String &uiFile);
+		const Common::String getUiFile() { return _uiFile; }
+	};
 protected:
 	Common::List<Room> _roomCache;
 	Common::List<Costume> _costumeCache;
+	Common::List<Ui> _uiCache;
 public:
 	ResourceManager_se(ScummEngine_se *vm);
 	~ResourceManager_se();
@@ -289,6 +328,8 @@ public:
 	Room *getRoom(const uint32 roomNumber);
 	Costume *getCostume(const Common::String &costumeFile);
 	Costume *getCostume(const uint32 costumeNumber);
+	Ui *getUi(const Common::String &uiFile);
+	Ui *getUi(const uint32 uiNumber);
 };
 #endif
 

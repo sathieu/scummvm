@@ -189,6 +189,24 @@ ResourceManager_se::Costume *ResourceManager_se::getCostume(const uint32 costume
 	return getCostume(_costumeList[costumeNumber].name);
 }
 
+ResourceManager_se::Ui *ResourceManager_se::getUi(const Common::String &uiFile) {
+	for (Common::List<Ui>::iterator
+			x = _uiCache.begin(); x != _uiCache.end(); ++x) {
+		if (x->getUiFile().equals(uiFile))
+			return &*x;
+	}
+	ResourceManager_se::Ui *ui = new ResourceManager_se::Ui(this, uiFile);
+	_uiCache.push_back(*ui);
+	return ui;
+}
+
+ResourceManager_se::Ui *ResourceManager_se::getUi(const uint32 uiNumber) {
+	if (uiNumber >= _uiCount) {
+		error("Unable to get out of bound SE costume");
+	}
+	return getUi(_uiList[uiNumber].name);
+}
+
 // ResourceManager_se::Room
 
 /*
@@ -589,6 +607,82 @@ ResourceManager_se::Costume::Costume(ResourceManager_se *resSE, const Common::St
 			}
 		}
 	}
+}
+
+// ResourceManager_se::Ui
+
+ResourceManager_se::Ui::Ui(ResourceManager_se *resSE, const Common::String &uiFile)
+	: _resSE(resSE), _uiFile(uiFile)
+	{
+	if (!_resSE->openFile(uiFile))
+		error("Could not open UI file %s", uiFile.c_str());
+
+	// read header
+	uint32 staticSpriteGroupCount = _resSE->_fileHandle->readUint32LE();
+	uint32 staticSpriteGroupAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+	uint32 textureCount = _resSE->_fileHandle->readUint32LE();
+	uint32 textureAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+
+	// read static sprite group list
+	_resSE->_fileHandle->seek(staticSpriteGroupAddress, SEEK_SET);
+	_staticSpriteGroupList.reserve(staticSpriteGroupCount);
+	for(uint32 index = 0; index < staticSpriteGroupCount; index++) {
+		struct staticSpriteGroup h;
+		h.unknown1 = _resSE->_fileHandle->readUint32LE();
+		h.width = _resSE->_fileHandle->readUint32LE();
+		h.height = _resSE->_fileHandle->readUint32LE();
+		h.staticSpriteCount = _resSE->_fileHandle->readUint32LE();
+		h.staticSpriteAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		_staticSpriteGroupList.push_back(h);
+	}
+
+	// read texture
+	_resSE->_fileHandle->seek(textureAddress, SEEK_SET);
+	_textureList.reserve(textureCount);
+	for(uint32 index = 0; index < textureCount; index++) {
+		struct texture h;
+		h.unknown1 = _resSE->_fileHandle->readUint32LE();
+		h.filenameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+		h.textureX = _resSE->_fileHandle->readUint32LE();
+		h.textureY = _resSE->_fileHandle->readUint32LE();
+		h.textureWidth = _resSE->_fileHandle->readUint32LE();
+		h.textureHeight = _resSE->_fileHandle->readUint32LE();
+		_textureList.push_back(h);
+	}
+
+	// read static sprite list
+	for(uint32 index = 0; index < _staticSpriteGroupList.size(); index++ ) {
+		struct staticSpriteGroup *h = &_staticSpriteGroupList[index];
+		_resSE->_fileHandle->seek(h->staticSpriteAddress, SEEK_SET);
+		h->staticSpriteList.reserve(h->staticSpriteCount);
+		for(uint32 index2 = 0; index2 < h->staticSpriteCount; index2++ ) {
+			struct staticSprite c;
+			c.x = _resSE->_fileHandle->readUint32LE();
+			c.y = _resSE->_fileHandle->readUint32LE();
+			c.width = _resSE->_fileHandle->readUint32LE();
+			c.height = _resSE->_fileHandle->readUint32LE();
+			c.filenameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
+			h->staticSpriteList.push_back(c);
+		}
+	}
+
+	// read texture filenames
+	for(uint32 index = 0; index < _textureList.size(); index++ ) {
+		struct texture *h = &_textureList[index];
+		_resSE->_fileHandle->seek(h->filenameAddress, SEEK_SET);
+		h->filename = _resSE->_fileHandle->readPadded16String();
+	}
+
+	// read static sprite filenames
+	for(uint32 index = 0; index < _staticSpriteGroupList.size(); index++ ) {
+		struct staticSpriteGroup *h = &_staticSpriteGroupList[index];
+		for(uint32 index2 = 0; index2 < h->staticSpriteList.size(); index2++ ) {
+			struct staticSprite *c = &h->staticSpriteList[index2];
+			_resSE->_fileHandle->seek(c->filenameAddress, SEEK_SET);
+			c->filename = _resSE->_fileHandle->readPadded16String();
+		}
+	}
+
 }
 
 #endif
