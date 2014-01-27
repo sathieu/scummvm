@@ -57,6 +57,10 @@ void ScummEngine_se::setClassicMode(bool mode) {
 		initScreens(0, 1070);
 	}
 	_fullRedraw = true;
+	//FIXME: HACK to avoid negative _screenTop
+	if (camera._cur.y < (_screenHeight / 2)) {
+		camera._cur.y = (_screenHeight / 2);
+	}
 }
 #endif
 
