@@ -1165,6 +1165,14 @@ public:
 	int getScale(int box, int x, int y);
 	int getScaleFromSlot(int slot, int x, int y);
 
+	// Position converters for SE games
+	// assert((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE))
+	inline int fromClassicX(int x) { return x * 6; }
+	inline int fromClassicY(int y) { return y * 36 / 5; } // = y * 6 * 120% (aspect ratio)
+	inline int toClassicX(int x) { return x / 6; }
+	inline int toClassicY(int y) { return y * 5 / 36; }
+
+
 protected:
 	// Scaling slots/items
 	struct ScaleSlot {

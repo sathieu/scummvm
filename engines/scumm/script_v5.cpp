@@ -1677,7 +1677,7 @@ void ScummEngine_v5::o5_roomOps() {
 		}
 		if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
 			assert(a == 0);
-			b = MIN(b * 6, 1080); // FIXME
+			b = MIN(fromClassicX(b), 1080);
 		}
 		initScreens(a, b);
 		break;

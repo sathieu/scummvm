@@ -157,13 +157,8 @@ byte SpecialEditionCostumeRenderer::drawLimb(const Actor *actor, int limb) {
 	int h = surf.h;
 	int srcX = 0;
 	int srcY = 0;
-	int dstX = _actorX;
-	dstX *= 6; // FIXME Wild guessed SE/classic ratio
-	dstX -= w / 2; // from left to middle
-	int dstY = _actorY;
-	dstY *= 6; // FIXME Wild guessed SE/classic ratio
-	dstY = dstY * 6 / 5; // aspect ratio  correction
-	dstY -= h; // from top to bottom
+	int dstX = _vm->fromClassicX(_actorX) - w / 2;
+	int dstY = _vm->fromClassicY(_actorY) - h;
 	if (dstX < 0) {
 		w += dstX;
 		srcX -= dstX;
