@@ -217,6 +217,8 @@ void ResourceManager_se::Room::drawBG(ScummEngine_se *vm, VirtScreenNumber virt)
 }
 
 const Graphics::Surface ResourceManager_se::Costume::getTexture(uint32 index, bool mirror, byte scale) {
+	if (index == 0xFFFFFFFF)
+		return Graphics::Surface();
 	assert(index < _textureList.size());
 	struct texture *currentTexture = &_textureList[index];
 
