@@ -36,7 +36,11 @@ void ScummEngine::setCameraAtEx(int at) {
 }
 
 void ScummEngine::setCameraAt(int pos_x, int pos_y) {
-	if (camera._mode != kFollowActorCameraMode || ABS(pos_x - camera._cur.x) > (_screenWidth / 2)) {
+	int screenWidthClassic = _screenWidth;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		screenWidthClassic = toClassicX(_screenWidth);
+	}
+	if (camera._mode != kFollowActorCameraMode || ABS(pos_x - camera._cur.x) > (screenWidthClassic / 2)) {
 		camera._cur.x = pos_x;
 	}
 	camera._dest.x = pos_x;
@@ -71,7 +75,11 @@ void ScummEngine::setCameraFollows(Actor *a, bool setCamera) {
 		setCameraAt(camera._cur.x, 0);
 	}
 
-	t = a->getPos().x / 8 - _screenStartStrip;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		t = a->getPos().x / 8 - toClassicX(_screenStartStrip);
+	} else {
+		t = a->getPos().x / 8 - _screenStartStrip;
+	}
 
 	if (t < camera._leftTrigger || t > camera._rightTrigger || setCamera == true)
 		setCameraAt(a->getPos().x, 0);
@@ -127,7 +135,11 @@ void ScummEngine::moveCamera() {
 		a = derefActor(camera._follows, "moveCamera");
 
 		int actorx = a->getPos().x;
-		t = actorx / 8 - _screenStartStrip;
+		if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+			t = actorx / 8 - toClassicX(_screenStartStrip);
+		} else {
+			t = actorx / 8 - _screenStartStrip;
+		}
 
 		if (t < camera._leftTrigger || t > camera._rightTrigger) {
 			if (snapToX) {
@@ -174,23 +186,34 @@ void ScummEngine::moveCamera() {
 }
 
 void ScummEngine::cameraMoved() {
+	int screenWidthClassic = _screenWidth;
+	int screenHeightClassic = _screenHeight;
 	int screenLeft;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		screenWidthClassic = toClassicX(_screenWidth);
+		screenHeightClassic = toClassicY(_screenHeight);
+	}
 	if (_game.version >= 7) {
-		assert(camera._cur.x >= (_screenWidth / 2) && camera._cur.y >= (_screenHeight / 2));
+		assert(camera._cur.x >= (screenWidthClassic / 2) && camera._cur.y >= (screenHeightClassic / 2));
 	} else {
-		if (camera._cur.x < (_screenWidth / 2)) {
-			camera._cur.x = (_screenWidth / 2);
-		} else if (camera._cur.x > _roomWidth - (_screenWidth / 2)) {
-			camera._cur.x = _roomWidth - (_screenWidth / 2);
+		if (camera._cur.x < (screenWidthClassic / 2)) {
+			camera._cur.x = (screenWidthClassic / 2);
+		} else if (camera._cur.x > _roomWidth - (screenWidthClassic / 2)) {
+			camera._cur.x = _roomWidth - (screenWidthClassic / 2);
 		}
 	}
 
-	_screenStartStrip = camera._cur.x / 8 - _gdi->_numStrips / 2;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		_screenStartStrip = fromClassicX(camera._cur.x) / 8 - _gdi->_numStrips / 2;
+		_screenTop = fromClassicY(camera._cur.y) - (_screenHeight / 2);
+	} else {
+		_screenStartStrip = camera._cur.x / 8 - _gdi->_numStrips / 2;
+		_screenTop = camera._cur.y - (_screenHeight / 2);
+	}
 	_screenEndStrip = _screenStartStrip + _gdi->_numStrips - 1;
 
-	_screenTop = camera._cur.y - (_screenHeight / 2);
 	if (_game.version >= 7) {
-		screenLeft = camera._cur.x - (_screenWidth / 2);
+		screenLeft = camera._cur.x - (screenWidthClassic / 2);
 	} else {
 		screenLeft = _screenStartStrip * 8;
 	}

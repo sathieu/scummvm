@@ -151,10 +151,17 @@ void ScummEngine::startScene(int room, Actor *a, int objectNr) {
 		VAR(VAR_ROOM_HEIGHT) = _roomHeight;
 	}
 
+	int screenWidthClassic = _screenWidth;
+	int screenHeightClassic = _screenHeight;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		screenWidthClassic = toClassicX(_screenWidth);
+		screenHeightClassic = toClassicY(_screenHeight);
+	}
+
 	if (VAR_CAMERA_MIN_X != 0xFF)
-		VAR(VAR_CAMERA_MIN_X) = _screenWidth / 2;
+		VAR(VAR_CAMERA_MIN_X) = screenWidthClassic / 2;
 	if (VAR_CAMERA_MAX_X != 0xFF)
-		VAR(VAR_CAMERA_MAX_X) = _roomWidth - (_screenWidth / 2);
+		VAR(VAR_CAMERA_MAX_X) = _roomWidth - (screenWidthClassic / 2);
 
 	if (_game.version >= 7) {
 		VAR(VAR_CAMERA_MIN_Y) = _screenHeight / 2;
@@ -163,8 +170,8 @@ void ScummEngine::startScene(int room, Actor *a, int objectNr) {
 	} else {
 		camera._mode = kNormalCameraMode;
 		if (_game.version > 2)
-			camera._cur.x = camera._dest.x = _screenWidth / 2;
-		camera._cur.y = camera._dest.y = _screenHeight / 2;
+			camera._cur.x = camera._dest.x = screenHeightClassic / 2;
+		camera._cur.y = camera._dest.y = screenHeightClassic / 2;
 	}
 
 	if (_roomResource == 0)
