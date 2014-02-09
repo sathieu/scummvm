@@ -38,7 +38,8 @@ protected:
 	virtual void setupRoomSubBlocks();
 	virtual void readIndexFile();
 
-	virtual void redrawBGAreas();
+	virtual void redrawBGStrip(int start, int num);
+	//virtual void redrawBGAreas();
 public:
 	ScummEngine_se(OSystem *syst, const DetectorResult &dr);
 	~ScummEngine_se();

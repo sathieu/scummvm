@@ -171,12 +171,12 @@ public:
 		Common::Array< Common::Array<staticSprite> > _extraSpriteList;
 		bool _spritesLoaded;
 
-		void drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList);
+		void drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList, int start, int num);
 	public:
 		Room(ResourceManager_se *resSE, const Common::String &roomFile);
 		const Common::String getRoomFile() { return _roomFile; }
 		void loadSprites();
-		void drawBG(ScummEngine_se *vm, VirtScreenNumber virt);
+		void redrawBGStrip(ScummEngine_se *vm, VirtScreenNumber virt, int start, int num);
 	};
 	friend class Room;
 	// Costume

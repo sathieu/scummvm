@@ -159,7 +159,7 @@ void ResourceManager_se::Room::loadSprites() {
 	}
 }
 
-void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList) {
+void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList, int start, int num) {
 	VirtScreen *vs = &vm->_virtscr[virt];
 	for(uint32 layer = 0; layer < staticSpriteList.size(); layer++ ) {
 		Common::Array<staticSprite> *innerStaticSpriteList = &staticSpriteList[layer];
@@ -172,14 +172,14 @@ void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScre
 			assert(innerStaticSprite->width <= innerStaticSprite->surface.w);
 			assert(innerStaticSprite->height <= innerStaticSprite->surface.h);
 			Common::Rect rectSrc(innerStaticSprite->x,                            innerStaticSprite->y,
-					           innerStaticSprite->x + innerStaticSprite->width, innerStaticSprite->y + innerStaticSprite->height);
-			Common::Rect rectDst(0, 0, vs->w, vs->h);
+			                     innerStaticSprite->x + innerStaticSprite->width, innerStaticSprite->y + innerStaticSprite->height);
+			Common::Rect rectDst(start * 48, 0, (start + num) * 48, vs->h);
 			if (rectSrc.intersects(rectDst)) {
 				rectSrc.clip(rectDst);
 				rectDst.left = rectSrc.left;
 				rectDst.top = rectSrc.top;
-				rectSrc.left -= innerStaticSprite->x;
-				rectSrc.right -= innerStaticSprite->x;
+				rectSrc.left -= innerStaticSprite->x + start * 48;
+				rectSrc.right -= innerStaticSprite->x + start * 48;
 				rectSrc.top -= innerStaticSprite->y;
 				rectSrc.bottom -= innerStaticSprite->y;
 
@@ -202,18 +202,18 @@ void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScre
 	}
 }
 
-void ResourceManager_se::Room::drawBG(ScummEngine_se *vm, VirtScreenNumber virt) {
+void ResourceManager_se::Room::redrawBGStrip(ScummEngine_se *vm, VirtScreenNumber virt, int start, int num) {
 	assert(vm);
 	VirtScreen *vs = &vm->_virtscr[virt];
 	assert(vs->hasTwoBuffers);
 	// Reset to green background (FIXME - should be black)
-	uint32 *backBuf = (uint32 *) vs->getBackPixels(0, 0);
-	Common::fill(backBuf, backBuf + vs->w * vs->h, 0x00FF00FF);
-	uint32 *buf = (uint32 *) vs->getPixels(0, 0);
-	Common::fill(buf, buf + vs->w * vs->h, 0x00FF00FF);
-	vm->markRectAsDirty(virt, 0, vs->w, 0, vs->h, USAGE_BIT_DIRTY);
+	uint32 *backBuf = (uint32 *) vs->getBackPixels(start * 48, 0);
+	Common::fill(backBuf, backBuf + (num * 48) * vs->h, 0x00FF00FF);
+	uint32 *buf = (uint32 *) vs->getPixels(start * 48, 0);
+	Common::fill(buf, buf + (num * 48) * vs->h, 0x00FF00FF);
+	vm->markRectAsDirty(virt, start * 48, num * 48, 0, vs->h, USAGE_BIT_DIRTY);
 	//drawStaticSpriteList(vm, virt, _extraSpriteList);
-	drawStaticSpriteList(vm, virt, _staticSpriteList);
+	drawStaticSpriteList(vm, virt, _staticSpriteList, start, num);
 }
 
 const Graphics::Surface ResourceManager_se::Costume::getTexture(uint32 index, bool mirror, byte scale) {
@@ -338,6 +338,27 @@ const Graphics::Surface ResourceManager_se::Costume::getSurface(const Common::St
 	return surf.getSubArea(rect);
 }
 
+void ScummEngine_se::redrawBGStrip(int start, int num) {
+	if (_game.features & GF_CLASSIC_MODE) {
+		ScummEngine::redrawBGStrip(start, num);
+		return;
+	}
+
+	ResourceManager_se::Room *room = _resSE->getRoom(_currentRoom);
+	room->loadSprites();
+	if (((uint32) _virtscr[kMainVirtScreen].h != room->_roomHeight)) {
+		initScreens(0, room->_roomHeight);
+	}
+
+	int s = _screenStartStrip + start;
+
+	for (int i = 0; i < num; i++)
+		setGfxUsageBit(s + i, USAGE_BIT_DIRTY);
+
+	room->redrawBGStrip(this, kMainVirtScreen, start, num);
+}
+
+/*
 void ScummEngine_se::redrawBGAreas() {
 	if (_game.features & GF_CLASSIC_MODE) {
 		ScummEngine::redrawBGAreas();
@@ -353,14 +374,14 @@ void ScummEngine_se::redrawBGAreas() {
 	}
 	if (_fullRedraw) {
 		_bgNeedsRedraw = false;
-		room->drawBG(this, kMainVirtScreen);
+		room->redrawBGStrip(this, kMainVirtScreen, 0, _gdi->_numStrips);
 	}
 
 	drawRoomObjects(0);
 	_bgNeedsRedraw = false;
 
 }
-
+// */
 #endif
 
 } // End of namespace Scumm

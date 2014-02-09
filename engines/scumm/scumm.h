@@ -991,7 +991,7 @@ protected:
 	void moveScreen(int dx, int dy, int height);
 
 	void restoreBackground(Common::Rect rect, byte backcolor = 0);
-	void redrawBGStrip(int start, int num);
+	virtual void redrawBGStrip(int start, int num);
 	virtual void redrawBGAreas();
 
 	void cameraMoved();
