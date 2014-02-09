@@ -212,7 +212,7 @@ void ResourceManager_se::Room::drawBG(ScummEngine_se *vm, VirtScreenNumber virt)
 	uint32 *buf = (uint32 *) vs->getPixels(0, 0);
 	Common::fill(buf, buf + vs->w * vs->h, 0x00FF00FF);
 	vm->markRectAsDirty(virt, 0, vs->w, 0, vs->h, USAGE_BIT_DIRTY);
-	drawStaticSpriteList(vm, virt, _extraSpriteList);
+	//drawStaticSpriteList(vm, virt, _extraSpriteList);
 	drawStaticSpriteList(vm, virt, _staticSpriteList);
 }
 
