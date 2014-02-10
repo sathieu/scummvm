@@ -42,7 +42,9 @@ void ScummEngine_se::readIndexFile() {
 }
 
 // ResourceManager_se
-ResourceManager_se::ResourceManager_se(ScummEngine_se *vm) : _vm(vm), _fileHandle(0), _roomList(), _uiList(), _costumeList() {
+ResourceManager_se::ResourceManager_se(ScummEngine_se *vm)
+	: _vm(vm), _fileHandle(0), _roomList(), _uiList(), _costumeList(),
+	_roomCache(), _costumeCache(), _uiCache() {
 	if (vm->_game.features & GF_PAKFILE) {
 		_fileHandle = new ScummPakFile();
 	} else {
@@ -161,7 +163,8 @@ ResourceManager_se::Room *ResourceManager_se::getRoom(const Common::String &room
 	}
 	ResourceManager_se::Room *room = new ResourceManager_se::Room(this, roomFile);
 	_roomCache.push_back(*room);
-	return room;
+	delete(room);
+	return &_roomCache.back();
 }
 
 ResourceManager_se::Room *ResourceManager_se::getRoom(const uint32 roomNumber) {
@@ -179,7 +182,8 @@ ResourceManager_se::Costume *ResourceManager_se::getCostume(const Common::String
 	}
 	ResourceManager_se::Costume *costume = new ResourceManager_se::Costume(this, costumeFile);
 	_costumeCache.push_back(*costume);
-	return costume;
+	delete(costume);
+	return &_costumeCache.back();
 }
 
 ResourceManager_se::Costume *ResourceManager_se::getCostume(const uint32 costumeNumber) {
@@ -197,7 +201,8 @@ ResourceManager_se::Ui *ResourceManager_se::getUi(const Common::String &uiFile) 
 	}
 	ResourceManager_se::Ui *ui = new ResourceManager_se::Ui(this, uiFile);
 	_uiCache.push_back(*ui);
-	return ui;
+	delete(ui);
+	return &_uiCache.back();
 }
 
 ResourceManager_se::Ui *ResourceManager_se::getUi(const uint32 uiNumber) {

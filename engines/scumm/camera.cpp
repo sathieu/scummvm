@@ -203,11 +203,10 @@ void ScummEngine::cameraMoved() {
 		}
 	}
 
+	_screenStartStrip = camera._cur.x / 8 - _gdi->_numStrips / 2;
 	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
-		_screenStartStrip = fromClassicX(camera._cur.x) / 8 - _gdi->_numStrips / 2;
 		_screenTop = fromClassicY(camera._cur.y) - (_screenHeight / 2);
 	} else {
-		_screenStartStrip = camera._cur.x / 8 - _gdi->_numStrips / 2;
 		_screenTop = camera._cur.y - (_screenHeight / 2);
 	}
 	_screenEndStrip = _screenStartStrip + _gdi->_numStrips - 1;
@@ -215,7 +214,7 @@ void ScummEngine::cameraMoved() {
 	if (_game.version >= 7) {
 		screenLeft = camera._cur.x - (screenWidthClassic / 2);
 	} else {
-		screenLeft = _screenStartStrip * 8;
+		screenLeft = _screenStartStrip * _stripWidth;
 	}
 
 	_virtscr[kMainVirtScreen].xstart = screenLeft;

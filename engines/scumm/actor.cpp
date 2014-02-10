@@ -1341,11 +1341,11 @@ void Actor::adjustActorPos() {
 int ScummEngine::getActorFromPos(int x, int y) {
 	int i;
 
-	if (!testGfxAnyUsageBits(x / 8))
+	if (!testGfxAnyUsageBits(x / _stripWidth))
 		return 0;
 
 	for (i = 1; i < _numActors; i++) {
-		if (testGfxUsageBit(x / 8, i) && !getClass(i, kObjectClassUntouchable)
+		if (testGfxUsageBit(x / _stripWidth, i) && !getClass(i, kObjectClassUntouchable)
 			&& y >= _actors[i]->_top && y <= _actors[i]->_bottom) {
 			if (_game.version > 2 || i != VAR(VAR_EGO))
 				return i;
@@ -1747,7 +1747,7 @@ void Actor::drawActorCostume(bool hitTestMode) {
 void Actor::prepareDrawActorCostume(BaseCostumeRenderer *bcr) {
 
 	bcr->_actorID = _number;
-	bcr->_actorX = _pos.x - _vm->_virtscr[kMainVirtScreen].xstart;
+	bcr->_actorX = _pos.x - _vm->_virtscr[kMainVirtScreen].xstart * 8 / _vm->_stripWidth;
 	bcr->_actorY = _pos.y - _elevation;
 
 	if (_vm->_game.version == 4 && (_boxscale & 0x8000)) {
@@ -1839,7 +1839,7 @@ void Actor_v2::prepareDrawActorCostume(BaseCostumeRenderer *bcr) {
 		bcr->_actorX *= V12_X_MULTIPLIER;
 		bcr->_actorY *= V12_Y_MULTIPLIER;
 	}
-	bcr->_actorX -= _vm->_virtscr[kMainVirtScreen].xstart;
+	bcr->_actorX -= _vm->_virtscr[kMainVirtScreen].xstart * 8 / _vm->_stripWidth;
 
 	if (_vm->_game.platform == Common::kPlatformNES) {
 		// In the NES version, when the actor is facing right,

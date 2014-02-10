@@ -36,11 +36,11 @@ byte BaseCostumeRenderer::drawCostume(const VirtScreen &vs, int numStrips, const
 	else
 		_out.setPixels(vs.getPixels(0, 0));
 
-	_actorX += _vm->_virtscr[kMainVirtScreen].xstart & 7;
+	_actorX += (_vm->_virtscr[kMainVirtScreen].xstart * 8 / _vm->_stripWidth) & 7;
 	_out.w = _out.pitch / _vm->_bytesPerPixel;
 	// We do not use getBasePtr here because the offset to pixels never used
 	// _vm->_bytesPerPixel, but it seems unclear why.
-	_out.setPixels((byte *)_out.getPixels() - (_vm->_virtscr[kMainVirtScreen].xstart & 7));
+	_out.setPixels((byte *)_out.getPixels() - ((_vm->_virtscr[kMainVirtScreen].xstart * 8 / _vm->_stripWidth) & 7));
 
 	_numStrips = numStrips;
 

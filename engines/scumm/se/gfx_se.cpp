@@ -161,6 +161,7 @@ void ResourceManager_se::Room::loadSprites() {
 
 void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList, int start, int num) {
 	VirtScreen *vs = &vm->_virtscr[virt];
+
 	for(uint32 layer = 0; layer < staticSpriteList.size(); layer++ ) {
 		Common::Array<staticSprite> *innerStaticSpriteList = &staticSpriteList[layer];
 		for(uint32 index2 = 0; index2 < innerStaticSpriteList->size(); index2++ ) {
@@ -178,8 +179,8 @@ void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScre
 				rectSrc.clip(rectDst);
 				rectDst.left = rectSrc.left;
 				rectDst.top = rectSrc.top;
-				rectSrc.left -= innerStaticSprite->x + start * 48;
-				rectSrc.right -= innerStaticSprite->x + start * 48;
+				rectSrc.left -= innerStaticSprite->x;
+				rectSrc.right -= innerStaticSprite->x;
 				rectSrc.top -= innerStaticSprite->y;
 				rectSrc.bottom -= innerStaticSprite->y;
 
@@ -187,16 +188,16 @@ void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScre
 					innerStaticSprite->x, innerStaticSprite->y, innerStaticSprite->width, innerStaticSprite->height,
 					rectDst.left, rectDst.top, rectSrc.width(), rectSrc.height());
 				byte *srcPtr = (byte *) innerStaticSprite->surface.getBasePtr(rectSrc.left, rectSrc.top);
-				byte *dstPtr = vs->getBackPixels(rectDst.left, rectDst.top);
+				byte *dstPtr = vs->getBackPixels(rectDst.left - vs->xstart, rectDst.top);
 				if (innerStaticSprite->surface.format.aLoss < 8) {
 					blitAlpha(dstPtr, vs->pitch, srcPtr, innerStaticSprite->surface.pitch, rectSrc.width(), rectSrc.height(), vs->format.bytesPerPixel, &vs->format);
 				} else {
 					blit(dstPtr, vs->pitch, srcPtr, innerStaticSprite->surface.pitch, rectSrc.width(), rectSrc.height(), vs->format.bytesPerPixel);
 				}
-				byte *src = vs->getBackPixels(rectDst.left, rectDst.top);
-				byte *dst = vs->getPixels(rectDst.left, rectDst.top);
+				byte *src = vs->getBackPixels(rectDst.left - vs->xstart, rectDst.top);
+				byte *dst = vs->getPixels(rectDst.left - vs->xstart, rectDst.top);
 				blit(dst, vs->pitch, src, vs->pitch, rectSrc.width(), rectSrc.height(), vs->format.bytesPerPixel);
-				//vm->markRectAsDirty(virt, rectDst.left, rectDst.right, rectDst.top, rectDst.bottom, USAGE_BIT_DIRTY);
+				//vm->markRectAsDirty(virt, start * 48, (start + num) * 48, 0, vs->h, USAGE_BIT_DIRTY);
 			}
 		}
 	}
@@ -207,11 +208,19 @@ void ResourceManager_se::Room::redrawBGStrip(ScummEngine_se *vm, VirtScreenNumbe
 	VirtScreen *vs = &vm->_virtscr[virt];
 	assert(vs->hasTwoBuffers);
 	// Reset to green background (FIXME - should be black)
-	uint32 *backBuf = (uint32 *) vs->getBackPixels(start * 48, 0);
-	Common::fill(backBuf, backBuf + (num * 48) * vs->h, 0x00FF00FF);
-	uint32 *buf = (uint32 *) vs->getPixels(start * 48, 0);
-	Common::fill(buf, buf + (num * 48) * vs->h, 0x00FF00FF);
-	vm->markRectAsDirty(virt, start * 48, num * 48, 0, vs->h, USAGE_BIT_DIRTY);
+	Graphics::Surface backSurface = Graphics::Surface();
+	backSurface.create(vs->w, vs->h, vs->format);
+	backSurface.pitch = vs->pitch;
+	backSurface.setPixels(vs->getBackPixels(start * 48 - vs->xstart, 0));
+	backSurface.fillRect(Common::Rect(0, 0, num * 48, vs->h), 0x00FF00FF);
+
+	Graphics::Surface frontSurface = Graphics::Surface();
+	frontSurface.create(vs->w, vs->h, vs->format);
+	frontSurface.pitch = vs->pitch;
+	frontSurface.setPixels(vs->getPixels(start * 48 - vs->xstart, 0));
+	frontSurface.fillRect(Common::Rect(0, 0, num * 48, vs->h), 0x00FF00FF);
+
+	vm->markRectAsDirty(virt, start * 48 - vs->xstart, (start + num) * 48 - vs->xstart, 0, vs->h, USAGE_BIT_DIRTY);
 	//drawStaticSpriteList(vm, virt, _extraSpriteList);
 	drawStaticSpriteList(vm, virt, _staticSpriteList, start, num);
 }
@@ -355,7 +364,7 @@ void ScummEngine_se::redrawBGStrip(int start, int num) {
 	for (int i = 0; i < num; i++)
 		setGfxUsageBit(s + i, USAGE_BIT_DIRTY);
 
-	room->redrawBGStrip(this, kMainVirtScreen, start, num);
+	room->redrawBGStrip(this, kMainVirtScreen, s, num);
 }
 
 /*

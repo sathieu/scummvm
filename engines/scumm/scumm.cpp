@@ -275,6 +275,7 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	_shakeFrame = 0;
 	_screenStartStrip = 0;
 	_screenEndStrip = 0;
+	_stripWidth = 8;
 	_screenTop = 0;
 	_drawObjectQueNr = 0;
 	memset(_drawObjectQue, 0, sizeof(_drawObjectQue));
@@ -552,6 +553,7 @@ ScummEngine::ScummEngine(OSystem *syst, const DetectorResult &dr)
 	} else if (_game.features & GF_SPECIAL_EDITION) {
 		_screenWidth = 1920;
 		_screenHeight = 1080;
+		_stripWidth = 48;
 	} else {
 		_screenWidth = 320;
 		_screenHeight = 200;

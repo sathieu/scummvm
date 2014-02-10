@@ -43,20 +43,27 @@ void ScummEngine_se::setClassicMode(bool mode) {
 		_game.features |= GF_CLASSIC_MODE;
 		_screenWidth = 320;
 		_screenHeight = 200;
+		_stripWidth = 8;
+		_gdi->_numStrips = _screenWidth / _stripWidth;
 		initGraphics(_screenWidth, _screenHeight, (_screenWidth > 320), &_outputPixelFormat);
 		_outputPixelFormat = _system->getScreenFormat();
 		initScreens(16, 144);
+		_virtscr[kMainVirtScreen].xstart /= 6;
 	} else { // Go to SE mode
 		if (!(_game.features & GF_CLASSIC_MODE))
 			return;
 		_game.features &= ~GF_CLASSIC_MODE;
 		_screenWidth = 1920;
 		_screenHeight = 1080;
+		_stripWidth = 48;
+		_gdi->_numStrips = _screenWidth / _stripWidth;
 		initGraphics(_screenWidth, _screenHeight, false, &_outputPixelFormat);
 		_outputPixelFormat = _system->getScreenFormat();
 		initScreens(0, 1070);
+		_virtscr[kMainVirtScreen].xstart *= 6;
 	}
-	_fullRedraw = true;
+	_completeScreenRedraw = true;
+	// _bgNeedsRedraw = true;
 	//FIXME: HACK to avoid negative _screenTop
 	if (camera._cur.y < (_screenHeight / 2)) {
 		camera._cur.y = (_screenHeight / 2);

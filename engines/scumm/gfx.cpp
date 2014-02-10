@@ -52,7 +52,8 @@ static void fill(byte *dst, int dstPitch, uint16 color, int w, int h, uint8 bitD
 #ifndef USE_ARM_GFX_ASM
 static void copy8Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
 #endif
-static void copy32Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
+static void copy8Col32(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
+static void copy48Col32(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth);
 static void clear8Col(byte *dst, int dstPitch, int height, uint8 bitDepth);
 
 static void ditherHerc(byte *src, byte *hercbuf, int srcPitch, int *x, int *y, int *width, int *height);
@@ -261,7 +262,7 @@ GdiTrueColor::GdiTrueColor(ScummEngine *vm) : Gdi(vm) {
 #endif
 
 void Gdi::init() {
-	_numStrips = _vm->_screenWidth / 8;
+	_numStrips = _vm->_screenWidth / _vm->_stripWidth;
 
 	// Increase the number of screen strips by one; needed for smooth scrolling
 	if (_vm->_game.version >= 7) {
@@ -467,11 +468,11 @@ void ScummEngine::markRectAsDirty(VirtScreenNumber virt, int left, int right, in
 
 	if (virt == kMainVirtScreen && dirtybit) {
 
-		lp = left / 8 + _screenStartStrip;
+		lp = left / _stripWidth + _screenStartStrip;
 		if (lp < 0)
 			lp = 0;
 
-		rp = (right + vs->xstart) / 8;
+		rp = (right + vs->xstart) / _stripWidth;
 		if (_game.version >= 7) {
 			if (rp > 409)
 				rp = 409;
@@ -484,8 +485,8 @@ void ScummEngine::markRectAsDirty(VirtScreenNumber virt, int left, int right, in
 	}
 
 	// The following code used to be in the separate method setVirtscreenDirty
-	lp = left / 8;
-	rp = right / 8;
+	lp = left / _stripWidth;
+	rp = right / _stripWidth;
 
 	if ((lp >= _gdi->_numStrips) || (rp < 0))
 		return;
@@ -580,7 +581,7 @@ void ScummEngine::updateDirtyScreen(VirtScreenNumber slot) {
 		return;
 
 	int i;
-	int w = 8;
+	int w = _stripWidth;
 	int start = 0;
 
 	for (i = 0; i < _gdi->_numStrips; i++) {
@@ -592,11 +593,11 @@ void ScummEngine::updateDirtyScreen(VirtScreenNumber slot) {
 			if (i != (_gdi->_numStrips - 1) && vs->bdirty[i + 1] == bottom && vs->tdirty[i + 1] == top) {
 				// Simple optimizations: if two or more neighboring strips
 				// form one bigger rectangle, coalesce them.
-				w += 8;
+				w += _stripWidth;
 				continue;
 			}
-			drawStripToScreen(vs, start * 8, w, top, bottom);
-			w = 8;
+			drawStripToScreen(vs, start * _stripWidth, w, top, bottom);
+			w = _stripWidth;
 		}
 		start = i + 1;
 	}
@@ -1172,7 +1173,7 @@ void ScummEngine::clearTextSurface() {
 }
 
 byte *ScummEngine::getMaskBuffer(int x, int y, int z) {
-	return _gdi->getMaskBuffer((x + _virtscr[kMainVirtScreen].xstart) / 8, y, z);
+	return _gdi->getMaskBuffer((x + _virtscr[kMainVirtScreen].xstart) / _stripWidth, y, z);
 }
 
 byte *Gdi::getMaskBuffer(int x, int y, int z) {
@@ -1256,7 +1257,7 @@ static void copy8Col(byte *dst, int dstPitch, const byte *src, int height, uint8
 
 #endif /* USE_ARM_GFX_ASM */
 
-static void copy32Col(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth) {
+static void copy8Col32(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth) {
 
 	do {
 #if defined(SCUMM_NEED_ALIGNMENT)
@@ -1274,6 +1275,67 @@ static void copy32Col(byte *dst, int dstPitch, const byte *src, int height, uint
 			((uint32 *)dst)[6] = ((const uint32 *)src)[6];
 			((uint32 *)dst)[7] = ((const uint32 *)src)[7];
 		}
+#endif
+		dst += dstPitch;
+		src += dstPitch;
+	} while (--height);
+}
+
+static void copy48Col32(byte *dst, int dstPitch, const byte *src, int height, uint8 bitDepth) {
+	assert(bitDepth == 4);
+	do {
+#if defined(SCUMM_NEED_ALIGNMENT)
+		memcpy(dst, src, 48 * bitDepth);
+#else
+		((uint32 *)dst)[0] = ((const uint32 *)src)[0];
+		((uint32 *)dst)[1] = ((const uint32 *)src)[1];
+		((uint32 *)dst)[2] = ((const uint32 *)src)[2];
+		((uint32 *)dst)[3] = ((const uint32 *)src)[3];
+		((uint32 *)dst)[4] = ((const uint32 *)src)[4];
+		((uint32 *)dst)[5] = ((const uint32 *)src)[5];
+		((uint32 *)dst)[6] = ((const uint32 *)src)[6];
+		((uint32 *)dst)[7] = ((const uint32 *)src)[7];
+		((uint32 *)dst)[8] = ((const uint32 *)src)[8];
+		((uint32 *)dst)[9] = ((const uint32 *)src)[9];
+		((uint32 *)dst)[10] = ((const uint32 *)src)[10];
+		((uint32 *)dst)[11] = ((const uint32 *)src)[11];
+		((uint32 *)dst)[12] = ((const uint32 *)src)[12];
+		((uint32 *)dst)[13] = ((const uint32 *)src)[13];
+		((uint32 *)dst)[14] = ((const uint32 *)src)[14];
+		((uint32 *)dst)[15] = ((const uint32 *)src)[15];
+		((uint32 *)dst)[16] = ((const uint32 *)src)[16];
+		((uint32 *)dst)[17] = ((const uint32 *)src)[17];
+		((uint32 *)dst)[18] = ((const uint32 *)src)[18];
+		((uint32 *)dst)[19] = ((const uint32 *)src)[19];
+		((uint32 *)dst)[20] = ((const uint32 *)src)[20];
+		((uint32 *)dst)[21] = ((const uint32 *)src)[21];
+		((uint32 *)dst)[22] = ((const uint32 *)src)[22];
+		((uint32 *)dst)[23] = ((const uint32 *)src)[23];
+		((uint32 *)dst)[24] = ((const uint32 *)src)[24];
+		((uint32 *)dst)[25] = ((const uint32 *)src)[25];
+		((uint32 *)dst)[26] = ((const uint32 *)src)[26];
+		((uint32 *)dst)[27] = ((const uint32 *)src)[27];
+		((uint32 *)dst)[28] = ((const uint32 *)src)[28];
+		((uint32 *)dst)[29] = ((const uint32 *)src)[29];
+		((uint32 *)dst)[30] = ((const uint32 *)src)[30];
+		((uint32 *)dst)[31] = ((const uint32 *)src)[31];
+		((uint32 *)dst)[32] = ((const uint32 *)src)[32];
+		((uint32 *)dst)[33] = ((const uint32 *)src)[33];
+		((uint32 *)dst)[34] = ((const uint32 *)src)[34];
+		((uint32 *)dst)[35] = ((const uint32 *)src)[35];
+		((uint32 *)dst)[36] = ((const uint32 *)src)[36];
+		((uint32 *)dst)[37] = ((const uint32 *)src)[37];
+		((uint32 *)dst)[38] = ((const uint32 *)src)[38];
+		((uint32 *)dst)[39] = ((const uint32 *)src)[39];
+		((uint32 *)dst)[40] = ((const uint32 *)src)[40];
+		((uint32 *)dst)[41] = ((const uint32 *)src)[41];
+		((uint32 *)dst)[42] = ((const uint32 *)src)[42];
+		((uint32 *)dst)[43] = ((const uint32 *)src)[43];
+		((uint32 *)dst)[44] = ((const uint32 *)src)[44];
+		((uint32 *)dst)[45] = ((const uint32 *)src)[45];
+		((uint32 *)dst)[46] = ((const uint32 *)src)[46];
+		((uint32 *)dst)[47] = ((const uint32 *)src)[47];
+		((uint32 *)dst)[48] = ((const uint32 *)src)[48];
 #endif
 		dst += dstPitch;
 		src += dstPitch;
@@ -1494,9 +1556,9 @@ void ScummEngine_v5::drawFlashlight() {
 		x = a->getPos().x;
 		y = a->getPos().y;
 	}
-	_flashlight.w = _flashlight.xStrips * 8;
-	_flashlight.h = _flashlight.yStrips * 8;
-	_flashlight.x = x - _flashlight.w / 2 - _screenStartStrip * 8;
+	_flashlight.w = _flashlight.xStrips * _stripWidth;
+	_flashlight.h = _flashlight.yStrips * _stripWidth;
+	_flashlight.x = x - _flashlight.w / 2 - _screenStartStrip * _stripWidth;
 	_flashlight.y = y - _flashlight.h / 2;
 
 	if (_game.id == GID_LOOM)
@@ -1505,8 +1567,8 @@ void ScummEngine_v5::drawFlashlight() {
 	// Clip the flashlight at the borders
 	if (_flashlight.x < 0)
 		_flashlight.x = 0;
-	else if (_flashlight.x + _flashlight.w > _gdi->_numStrips * 8)
-		_flashlight.x = _gdi->_numStrips * 8 - _flashlight.w;
+	else if (_flashlight.x + _flashlight.w > _gdi->_numStrips * _stripWidth)
+		_flashlight.x = _gdi->_numStrips * _stripWidth - _flashlight.w;
 	if (_flashlight.y < 0)
 		_flashlight.y = 0;
 	else if (_flashlight.y + _flashlight.h> vs->h)
@@ -1645,8 +1707,8 @@ void GdiV2::prepareDrawBitmap(const byte *ptr, VirtScreen *vs,
 	// differently from all other (newer) graphic formats for this reason.
 	//
 	StripTable *table = (_objectMode ? 0 : _roomStrips);
-	const int left = (stripnr * 8);
-	const int right = left + (numstrip * 8);
+	const int left = (stripnr * _vm->_stripWidth);
+	const int right = left + (numstrip * _vm->_stripWidth);
 	byte *dst;
 	byte *mask_ptr;
 	const byte *src;
@@ -1906,9 +1968,13 @@ void Gdi::drawBitmap(const byte *ptr, VirtScreen *vs, int x, const int y, const 
 
 		if (vs->hasTwoBuffers) {
 			byte *frontBuf = (byte *)vs->getBasePtr(x * 8, y);
-			if (lightsOn && (_vm->_game.features & GF_32BIT_COLOR))
-				copy32Col(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
-			else if (lightsOn)
+			if (lightsOn && (_vm->_game.features & GF_32BIT_COLOR)) {
+				if (_vm->_stripWidth == 48) {
+					copy48Col32(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
+				} else {
+					copy8Col32(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
+				}
+			} else if (lightsOn)
 				copy8Col(frontBuf, vs->pitch, dstPtr, height, vs->format.bytesPerPixel);
 			else
 				clear8Col(frontBuf, vs->pitch, height, vs->format.bytesPerPixel);
@@ -2338,13 +2404,17 @@ void Gdi::resetBackground(int top, int bottom, int strip) {
 	if (bottom > vs->bdirty[strip])
 		vs->bdirty[strip] = bottom;
 
-	bgbak_ptr = (byte *)vs->backBuf + top * vs->pitch + (strip + vs->xstart/8) * 8 * vs->format.bytesPerPixel;
-	backbuff_ptr = (byte *)vs->getBasePtr((strip + vs->xstart/8) * 8, top);
+	bgbak_ptr = (byte *)vs->backBuf + top * vs->pitch + (strip + vs->xstart / _vm->_stripWidth) * _vm->_stripWidth * vs->format.bytesPerPixel;
+	backbuff_ptr = (byte *)vs->getBasePtr((strip + vs->xstart / _vm->_stripWidth) * _vm->_stripWidth, top);
 
 	numLinesToProcess = bottom - top;
 	if (numLinesToProcess) {
 		if (_vm->isLightOn() && (_vm->_game.features & GF_32BIT_COLOR))
-			copy32Col(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
+			if (_vm->_stripWidth == 48) {
+				copy48Col32(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
+			} else {
+				copy8Col32(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
+			}
 		else if (_vm->isLightOn()) {
 			copy8Col(backbuff_ptr, vs->pitch, bgbak_ptr, numLinesToProcess, vs->format.bytesPerPixel);
 		} else {

@@ -936,6 +936,7 @@ public:
 	CameraData camera;			// 'Camera' - viewport
 
 	int _screenStartStrip, _screenEndStrip;
+	byte _stripWidth;
 	int _screenTop;
 
 	Common::RenderMode _renderMode;
