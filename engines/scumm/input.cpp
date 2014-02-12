@@ -187,6 +187,9 @@ void ScummEngine::parseEvent(Common::Event event) {
 		} else if (_useCJKMode && _textSurfaceMultiplier == 2) {
 			_mouse.x >>= 1;
 			_mouse.y >>= 1;
+		} else if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+			_mouse.x = toClassicX(_mouse.x);
+			_mouse.y = toClassicY(_mouse.y);
 		}
 		break;
 	case Common::EVENT_LBUTTONUP:
@@ -272,21 +275,33 @@ void ScummEngine::processInput() {
 	Common::KeyState lastKeyHit = _keyPressed;
 	_keyPressed.reset();
 
+	int screenWidthClassic = _screenWidth;
+	int screenHeightClassic = _screenHeight;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		screenWidthClassic = toClassicX(_screenWidth);
+		screenHeightClassic = toClassicY(_screenHeight);
+	}
+
 	//
 	// Clip the mouse coordinates, and compute _virtualMouse.x (and clip it, too)
 	//
 	if (_mouse.x < 0)
 		_mouse.x = 0;
-	if (_mouse.x > _screenWidth-1)
-		_mouse.x = _screenWidth-1;
+	if (_mouse.x > screenWidthClassic-1)
+		_mouse.x = screenWidthClassic-1;
 	if (_mouse.y < 0)
 		_mouse.y = 0;
-	if (_mouse.y > _screenHeight-1)
-		_mouse.y = _screenHeight-1;
+	if (_mouse.y > screenHeightClassic-1)
+		_mouse.y = screenHeightClassic-1;
 
 	VirtScreen *vs = &_virtscr[kMainVirtScreen];
-	_virtualMouse.x = _mouse.x + vs->xstart;
-	_virtualMouse.y = _mouse.y - vs->topline;
+	if ((_game.features & GF_SPECIAL_EDITION) && !(_game.features & GF_CLASSIC_MODE)) {
+		_virtualMouse.x = _mouse.x + toClassicX(vs->xstart);
+		_virtualMouse.y = _mouse.y - toClassicY(vs->topline);
+	} else {
+		_virtualMouse.x = _mouse.x + vs->xstart;
+		_virtualMouse.y = _mouse.y - vs->topline;
+	}
 	if (_game.version >= 7)
 		_virtualMouse.y += _screenTop;
 
