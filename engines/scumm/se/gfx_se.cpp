@@ -184,7 +184,7 @@ void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScre
 				rectSrc.top -= innerStaticSprite->y;
 				rectSrc.bottom -= innerStaticSprite->y;
 
-				warning("Rendering static sprite %i:%i=%s from room %i (%i, %i)+(%i, %i) at (%i, %i)+(%i, %i)", layer, index2, innerStaticSprite->textureFileName.c_str(), _identifier,
+				debug("Rendering static sprite %i:%i=%s from room %i (%i, %i)+(%i, %i) at (%i, %i)+(%i, %i)", layer, index2, innerStaticSprite->textureFileName.c_str(), _identifier,
 					innerStaticSprite->x, innerStaticSprite->y, innerStaticSprite->width, innerStaticSprite->height,
 					rectDst.left, rectDst.top, rectSrc.width(), rectSrc.height());
 				byte *srcPtr = (byte *) innerStaticSprite->surface.getBasePtr(rectSrc.left, rectSrc.top);
@@ -293,7 +293,7 @@ const Graphics::Surface ResourceManager_se::Costume::getTexture(uint32 index, bo
 
 const Graphics::Surface ResourceManager_se::Costume::getSurface(const Common::String &animationGroupName, const uint32 animationGroupIndex, const uint32 animationIndex, const uint32 frameIndex, const byte scale) {
 	// animationGroup > animation > frame
-	uint32 animationGroupIndex2 = animationGroupIndex;
+	uint32 animationGroupIndex2 = 0xFFFFFFFF;
 	if (animationGroupName.size()) {
 		for(uint32 index = 0; index < _animationGroupList.size(); index++ ) {
 			struct animationGroup *h = &_animationGroupList[index];
@@ -306,12 +306,25 @@ const Graphics::Surface ResourceManager_se::Costume::getSurface(const Common::St
 	assert(animationGroupIndex2 < _animationGroupList.size());
 	struct animationGroup *ag = 0;
 	ag = &_animationGroupList[animationGroupIndex2];
-	if (animationIndex >= ag->animationList.size()) {
+	uint32 animationIndex2 = animationIndex - _unknown7;
+	if (animationIndex2 >= ag->animationList.size()) {
+		/*
+		warning("Animation id %i is out of range [0-%i]"
+		        " for costume %i:%s (ag=%s:%i->%i, a=%i, f=%i)",
+		        animationIndex2, ag->animationList.size() - 1,
+		        _identifier, _name.c_str(), animationGroupName.c_str(), animationGroupIndex, animationGroupIndex2, animationIndex2, frameIndex);
+		animationIndex2 = animationIndex2 % ag->animationList.size();
+		*/
 		return Graphics::Surface();
 	}
 	struct animation *a = 0;
-	a = &ag->animationList[animationIndex];
+	a = &ag->animationList[animationIndex2];
 	if (!a->frameList.size()) {
+		/*
+		warning("No frame found"
+		        " for costume %i:%s (ag=%s:%i->%i, a=%i, f=%i)",
+		        _identifier, _name.c_str(), animationGroupName.c_str(), animationGroupIndex, animationGroupIndex2, animationIndex2, frameIndex);
+		// */
 		return Graphics::Surface();
 	}
 	uint32 frameIndex2 = frameIndex % a->frameList.size();
@@ -319,9 +332,15 @@ const Graphics::Surface ResourceManager_se::Costume::getSurface(const Common::St
 	struct frame *f = 0;
 	f = &a->frameList[frameIndex2];
 	// spriteGroup > sprite > texture
-	assert(a->spriteGroupIdentitier < _spriteGroupList.size());
+	if (a->spriteGroupIdentitier - _unknown7 >= _spriteGroupList.size()) {
+		warning("Sprite group id %i is out of range [0-%i]"
+		        " for costume %i:%s (ag=%s:%i->%i, a=%i, f=%i)",
+		        a->spriteGroupIdentitier, _spriteGroupList.size() - 1,
+		        _identifier, _name.c_str(), animationGroupName.c_str(), animationGroupIndex, animationGroupIndex2, animationIndex2, frameIndex);
+		return Graphics::Surface();
+	}
 	struct spriteGroup *sg = 0;
-	sg = &_spriteGroupList[a->spriteGroupIdentitier];
+	sg = &_spriteGroupList[a->spriteGroupIdentitier - _unknown7];
 	if (f->spriteIdentitier == 0xFFFFFFFF) {
 		return Graphics::Surface();
 	}

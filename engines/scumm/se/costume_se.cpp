@@ -93,19 +93,18 @@ void SpecialEditionCostumeLoader::loadCostume(int id) {
 }
 
 byte SpecialEditionCostumeRenderer::drawLimb(const Actor *actor, int limb) {
-	byte ret = ClassicCostumeRenderer::drawLimb(actor, limb);
+	byte ret = 0;
 	if (_vm->_game.features & GF_CLASSIC_MODE) {
+		ret = ClassicCostumeRenderer::drawLimb(actor, limb);
 		return ret;
 	}
 
 	ScummEngine_se *vm = static_cast<ScummEngine_se *>(_vm);
 	const CostumeData &cost = actor->_cost;
 
-	/*
 	// If the specified limb is stopped or not existing, do nothing.
 	if (cost.curpos[limb] == 0xFFFF || cost.stopped & (1 << limb))
 		return 0;
-	// */
 
 	ResourceManager_se *resSE = vm->getResourceManagerSE();
 	ResourceManager_se::Costume *costumeSE = resSE->getCostume(_loaded._id);
