@@ -20,7 +20,9 @@
  */
 
 #include "common/stream.h"
+#include "common/substream.h"
 #include "common/textconsole.h"
+#include "common/zlib.h"
 
 #include "graphics/pixelformat.h"
 #include "graphics/surface.h"
@@ -174,8 +176,16 @@ bool DXTDecoder::loadStream(Common::SeekableReadStream &stream) {
 	stream.read(&tmp, 2);
 	stream.seek(-2, SEEK_CUR);
 	if ((tmp[0] == 0x1F) && (tmp[1] == 0x8B)) {
-		warning("DXT: compression not supported");
+#if defined(USE_ZLIB)
+		Common::SeekableSubReadStream *compressedStream = new Common::SeekableSubReadStream(&stream, 12, stream.size());
+		Common::SeekableReadStream *uncompressedStream = wrapCompressedReadStream(compressedStream);
+		bool result = loadFourCCStream(height, width, fourCC, *uncompressedStream);
+		delete compressedStream;
+		return result;
+#else
+		warning("DXT: compression not supported, please compile with zlib support");
 		return false;
+#endif
 	}
 	return loadFourCCStream(height, width, fourCC, stream);
 }
