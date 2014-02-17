@@ -1146,13 +1146,6 @@ Common::Error ScummEngine::init() {
 #ifdef ENABLE_SCUMM_SE
 		} else if (_game.features & GF_SPECIAL_EDITION) {
 			assert(_game.id == GID_MONKEY || _game.id == GID_MONKEY2);
-			if (_game.id == GID_MONKEY) {
-				_filenamePattern.pattern = "monkey1.%03d";
-				_filenamePattern.genMethod = kGenDiskNum;
-			} else if (_game.id == GID_MONKEY2) {
-				_filenamePattern.pattern = "monkey2.%03d";
-				_filenamePattern.genMethod = kGenDiskNum;
-			}
 			if (_game.features & GF_PAKFILE) {
 				_fileHandle = new ScummPakFile();
 				_containerFile = _filenamePattern.pattern;
@@ -1162,6 +1155,13 @@ Common::Error ScummEngine::init() {
 				// We need to go deeper
 				SearchMan.remove(gameDataDir.getPath());
 				SearchMan.addDirectory(gameDataDir.getPath(), gameDataDir, 0, 5);
+			}
+			if (_game.id == GID_MONKEY) {
+				_filenamePattern.pattern = "monkey1.%03d";
+				_filenamePattern.genMethod = kGenDiskNum;
+			} else if (_game.id == GID_MONKEY2) {
+				_filenamePattern.pattern = "monkey2.%03d";
+				_filenamePattern.genMethod = kGenDiskNum;
 			}
 #endif
 		} else {
