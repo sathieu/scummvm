@@ -98,6 +98,9 @@ byte SpecialEditionCostumeRenderer::drawLimb(const Actor *actor, int limb) {
 		ret = ClassicCostumeRenderer::drawLimb(actor, limb);
 		return ret;
 	}
+	if ((_vm->_game.id == GID_MONKEY2) && (_loaded._id == 148)) {
+		return 0;
+	}
 
 	ScummEngine_se *vm = static_cast<ScummEngine_se *>(_vm);
 	const CostumeData &cost = actor->_cost;

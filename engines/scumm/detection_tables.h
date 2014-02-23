@@ -942,7 +942,7 @@ static const GameFilenamePattern gameFilenamesTable[] = {
 	{ "monkeyse",  "monkey1.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
 	{ "monkey2se", "monkey2.pak", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, 0 },
 	{ "monkeyse",  "monkey1_retail.scumm.xml", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, "unpacked" },
-	{ "monkey2se", "monkey2_retail.scumm.xml", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, "unpacked" },
+	{ "monkey2se", "monkey.scumm.xml", kGenUnchanged, UNK_LANG, Common::kPlatformWindows, "unpacked" },
 #endif
 	{ NULL, NULL, kGenUnchanged, UNK_LANG, UNK, 0 }
 };

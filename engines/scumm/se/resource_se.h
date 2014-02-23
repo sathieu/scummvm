@@ -97,6 +97,8 @@ public:
 		struct staticSprite {
 			uint32 x;
 			uint32 y;
+			uint32 unknown3; // MI2SE only
+			uint32 unknown4; // MI2SE only
 			uint32 width;
 			uint32 height;
 			uint32 textureFileNameAddress;
@@ -203,6 +205,7 @@ public:
 		struct animation {
 			uint32 spriteGroupIdentitier;
 			uint32 unknown2;
+			uint32 unknown3; // MI2SE only
 			uint32 frameCount;
 			uint32 frameAddress;
 			Common::Array<struct frame> frameList;
@@ -263,6 +266,10 @@ public:
 		uint32 _unknown18;
 		uint32 _unknown19;
 		uint32 _unknown20;
+		uint32 _unknown21;
+		uint32 _unknown22;
+		uint32 _unknown23;
+		uint32 _unknown24;
 		Common::String _name;
 
 		Common::Array<struct texture> _textureList;

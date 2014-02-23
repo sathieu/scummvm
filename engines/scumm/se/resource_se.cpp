@@ -83,7 +83,7 @@ void ResourceManager_se::readIndexFile() {
 	if (_vm->_game.id == GID_MONKEY)
 		SEIndexFile = "monkey1_retail.scumm.xml";
 	else if (_vm->_game.id == GID_MONKEY2)
-		SEIndexFile = "monkey2_retail.scumm.xml";
+		SEIndexFile = "monkey.scumm.xml";
 	else
 		error("Unsupported game id '%i'", _vm->_game.id);
 
@@ -104,6 +104,12 @@ void ResourceManager_se::readIndexFile() {
 		struct fileInfo fi;
 		fi.flags = _fileHandle->readUint32LE();
 		fi.nameAddress = _fileHandle->readAbsolutePositionUint32LE();
+		if (_vm->_game.id == GID_MONKEY2) {
+			// MI2SE has longer header
+			_fileHandle->readUint32LE();
+			_fileHandle->readUint32LE();
+			_fileHandle->readUint32LE();
+		}
 		_roomList.push_back(fi);
 	}
 	_fileHandle->seek(_costumeHeaderAddress, SEEK_SET);
@@ -171,6 +177,9 @@ ResourceManager_se::Room *ResourceManager_se::getRoom(const uint32 roomNumber) {
 	if (roomNumber >= _roomCount) {
 		error("Unable to get out of bound SE room");
 	}
+	if (_roomList[roomNumber].name.empty()) {
+		error("Room %i is not in the index", roomNumber);
+	}
 	return getRoom(_roomList[roomNumber].name);
 }
 
@@ -189,6 +198,9 @@ ResourceManager_se::Costume *ResourceManager_se::getCostume(const Common::String
 ResourceManager_se::Costume *ResourceManager_se::getCostume(const uint32 costumeNumber) {
 	if (costumeNumber >= _costumeCount) {
 		error("Unable to get out of bound SE costume");
+	}
+	if (_costumeList[costumeNumber].name.empty()) {
+		error("Costume %i is not in the index", costumeNumber);
 	}
 	return getCostume(_costumeList[costumeNumber].name);
 }
@@ -321,6 +333,13 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 			struct staticSprite s;
 			s.x = _resSE->_fileHandle->readUint32LE();
 			s.y = _resSE->_fileHandle->readUint32LE();
+			if (_resSE->_vm->_game.id == GID_MONKEY2) {
+				s.unknown3 = _resSE->_fileHandle->readUint32LE();
+				s.unknown4 = _resSE->_fileHandle->readUint32LE();
+			} else {
+				s.unknown3 = 0;
+				s.unknown4 = 0;
+			}
 			s.width = _resSE->_fileHandle->readUint32LE();
 			s.height = _resSE->_fileHandle->readUint32LE();
 			s.textureFileNameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
@@ -333,6 +352,11 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 		Common::Array<staticSprite> *innerStaticSpriteList = &_staticSpriteList[index];
 		for(uint32 index2 = 0; index2 < innerStaticSpriteList->size(); index2++ ) {
 			struct staticSprite *s = &(*innerStaticSpriteList)[index2];
+			if (s->textureFileNameAddress > _resSE->_fileHandle->size()) {
+				warning("static textureFileNameAddress=%i is beyond file length=%i",
+					s->textureFileNameAddress, _resSE->_fileHandle->size());
+				continue;
+			}
 			_resSE->_fileHandle->seek(s->textureFileNameAddress, SEEK_SET);
 			s->textureFileName = _resSE->_fileHandle->readPadded16String();
 		}
@@ -363,6 +387,11 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 		Common::Array<sprite> *innerSpriteList = &_spriteList[index];
 		for(uint32 index2 = 0; index2 < innerSpriteList->size(); index2++ ) {
 			struct sprite *s = &(*innerSpriteList)[index2];
+			if (s->textureFileNameAddress > _resSE->_fileHandle->size()) {
+				warning("textureFileNameAddress=%i is beyond file length=%i",
+					s->textureFileNameAddress, _resSE->_fileHandle->size());
+				continue;
+			}
 			_resSE->_fileHandle->seek(s->textureFileNameAddress, SEEK_SET);
 			s->textureFileName = _resSE->_fileHandle->readPadded16String();
 		}
@@ -498,7 +527,26 @@ ResourceManager_se::Costume::Costume(ResourceManager_se *resSE, const Common::St
 	_unknown18 = _resSE->_fileHandle->readUint32LE();
 	_unknown19 = _resSE->_fileHandle->readUint32LE();
 	_unknown20 = _resSE->_fileHandle->readUint32LE();
+	if (_resSE->_vm->_game.id == GID_MONKEY2) {
+		_unknown21 = _resSE->_fileHandle->readUint32LE();
+		_unknown22 = _resSE->_fileHandle->readUint32LE();
+		_unknown23 = _resSE->_fileHandle->readUint32LE();
+		_unknown24 = _resSE->_fileHandle->readUint32LE();
+	}
+	assert(_resSE->_fileHandle->pos() == _nameAddress);
 	_name = _resSE->_fileHandle->readPadded16String();
+	if (_unknown7)
+		warning("Costume %i:%s has _unknown7 = %d", _identifier, _name.c_str(), _unknown7);
+	if (_unknown10)
+		warning("Costume %i:%s has _unknown10 = %d", _identifier, _name.c_str(), _unknown10);
+	if (_unknown13)
+		warning("Costume %i:%s has _unknown13 = %d", _identifier, _name.c_str(), _unknown13);
+	if (_unknown14)
+		warning("Costume %i:%s has _unknown14 = %d", _identifier, _name.c_str(), _unknown14);
+	if (_unknown15)
+		warning("Costume %i:%s has _unknown15 = %d", _identifier, _name.c_str(), _unknown15);
+	if (_unknown16)
+		warning("Costume %i:%s has _unknown16 = %d", _identifier, _name.c_str(), _unknown16);
 
 	// read texture header list
 	_resSE->_fileHandle->seek(_textureHeaderAddress, SEEK_SET);
@@ -568,6 +616,11 @@ ResourceManager_se::Costume::Costume(ResourceManager_se *resSE, const Common::St
 			struct animation a;
 			a.spriteGroupIdentitier = _resSE->_fileHandle->readUint32LE();
 			a.unknown2 = _resSE->_fileHandle->readUint32LE();
+			if (_resSE->_vm->_game.id == GID_MONKEY2) {
+				a.unknown3 = _resSE->_fileHandle->readUint32LE();
+			} else {
+				a.unknown3 = 0;
+			}
 			a.frameCount = _resSE->_fileHandle->readUint32LE();
 			a.frameAddress = _resSE->_fileHandle->readAbsolutePositionUint32LE();
 			a.frameList.clear();
