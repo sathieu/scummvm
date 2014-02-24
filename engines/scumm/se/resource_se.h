@@ -176,6 +176,7 @@ public:
 		void drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList, int start, int num);
 	public:
 		Room(ResourceManager_se *resSE, const Common::String &roomFile);
+		~Room();
 		const Common::String getRoomFile() { return _roomFile; }
 		void loadSprites();
 		void redrawBGStrip(ScummEngine_se *vm, VirtScreenNumber virt, int start, int num);
@@ -278,6 +279,7 @@ public:
 		Common::Array<struct pathPoint> _pathPointList;
 	public:
 		Costume(ResourceManager_se *resSE, const Common::String &costumeFile);
+		~Costume();
 		const Common::String getCostumeFile() { return _costumeFile; }
 		const Graphics::Surface getTexture(uint32 index, bool mirror, byte scale);
 		const Graphics::Surface getSurface(const Common::String &animationGroupName, const uint32 animationGroupIndex, const uint32 animationIndex, const uint32 frameIndex, const byte scale);
@@ -318,6 +320,7 @@ public:
 		Common::Array<struct texture> _textureList;
 	public:
 		Ui(ResourceManager_se *resSE, const Common::String &uiFile);
+		~Ui();
 		const Common::String getUiFile() { return _uiFile; }
 	};
 protected:

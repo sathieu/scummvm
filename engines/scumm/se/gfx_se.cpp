@@ -157,6 +157,7 @@ void ResourceManager_se::Room::loadSprites() {
 			innerExtraSprite->surface.copyFrom(*decoder->getSurface());
 		}
 	}
+	delete decoder;
 }
 
 void ResourceManager_se::Room::drawStaticSpriteList(ScummEngine_se *vm, VirtScreenNumber virt, Common::Array< Common::Array<staticSprite> > staticSpriteList, int start, int num) {
@@ -209,13 +210,17 @@ void ResourceManager_se::Room::redrawBGStrip(ScummEngine_se *vm, VirtScreenNumbe
 	assert(vs->hasTwoBuffers);
 	// Reset to green background (FIXME - should be black)
 	Graphics::Surface backSurface = Graphics::Surface();
-	backSurface.create(vs->w, vs->h, vs->format);
+	backSurface.w = vs->w;
+	backSurface.h = vs->h;
+	backSurface.format = vs->format;
 	backSurface.pitch = vs->pitch;
 	backSurface.setPixels(vs->getBackPixels(start * 48 - vs->xstart, 0));
 	backSurface.fillRect(Common::Rect(0, 0, num * 48, vs->h), 0x00FF00FF);
 
 	Graphics::Surface frontSurface = Graphics::Surface();
-	frontSurface.create(vs->w, vs->h, vs->format);
+	frontSurface.w = vs->w;
+	frontSurface.h = vs->h;
+	frontSurface.format = vs->format;
 	frontSurface.pitch = vs->pitch;
 	frontSurface.setPixels(vs->getPixels(start * 48 - vs->xstart, 0));
 	frontSurface.fillRect(Common::Rect(0, 0, num * 48, vs->h), 0x00FF00FF);
@@ -247,6 +252,7 @@ const Graphics::Surface ResourceManager_se::Costume::getTexture(uint32 index, bo
 			return currentTexture->surface[0xFF];
 		}
 		currentTexture->surface[0xFF].copyFrom(*decoder->getSurface());
+		delete decoder;
 	}
 
 	// scale if necessary

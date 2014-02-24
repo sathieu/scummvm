@@ -487,6 +487,32 @@ ResourceManager_se::Room::Room(ResourceManager_se *resSE, const Common::String &
 	}
 }
 
+ResourceManager_se::Room::~Room() {
+	for(uint32 layer = 0; layer < _staticSpriteList.size(); layer++ ) {
+		Common::Array<staticSprite> *innerStaticSpriteList = &_staticSpriteList[layer];
+		for(uint32 index2 = 0; index2 < innerStaticSpriteList->size(); index2++ ) {
+			struct staticSprite *innerStaticSprite = &(*innerStaticSpriteList)[index2];
+			innerStaticSprite->surface.free();
+		}
+	}
+
+	for(uint32 layer = 0; layer < _spriteList.size(); layer++ ) {
+		Common::Array<sprite> *innerSpriteList = &_spriteList[layer];
+		for(uint32 index2 = 0; index2 < innerSpriteList->size(); index2++ ) {
+			struct sprite *innerSprite = &(*innerSpriteList)[index2];
+			innerSprite->surface.free();
+		}
+	}
+
+	for(uint32 index = 0; index < _extraSpriteList.size(); index++ ) {
+		Common::Array<staticSprite> *innerExtraSpriteList = &_extraSpriteList[index];
+		for(uint32 index2 = 0; index2 < innerExtraSpriteList->size(); index2++ ) {
+			struct staticSprite *innerExtraSprite = &(*innerExtraSpriteList)[index2];
+			innerExtraSprite->surface.free();
+		}
+	}
+}
+
 // ResourceManager_se::Costume
 
 /*
@@ -667,6 +693,19 @@ ResourceManager_se::Costume::Costume(ResourceManager_se *resSE, const Common::St
 	}
 }
 
+ResourceManager_se::Costume::~Costume() {
+	for(uint32 index = 0; index < _textureList.size(); index++ ) {
+		struct texture *currentTexture = &_textureList[index];
+		for(int scale = 0; scale < 256; scale++) {
+			if (currentTexture->flags[scale] & TF_EXISTS) {
+				currentTexture->surface[scale].free();
+			}
+			if (currentTexture->flags[scale] & TF_MIRROR_EXISTS) {
+				currentTexture->mirroredSurface[scale].free();
+			}
+		}
+	}
+}
 // ResourceManager_se::Ui
 
 ResourceManager_se::Ui::Ui(ResourceManager_se *resSE, const Common::String &uiFile)
@@ -740,6 +779,10 @@ ResourceManager_se::Ui::Ui(ResourceManager_se *resSE, const Common::String &uiFi
 			c->filename = _resSE->_fileHandle->readPadded16String();
 		}
 	}
+
+}
+
+ResourceManager_se::Ui::~Ui() {
 
 }
 
