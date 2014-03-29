@@ -33,6 +33,9 @@
 #ifdef USE_WII_DI
 #include <di/di.h>
 #include <iso9660.h>
+#ifdef GAMECUBE
+#include <ogc/dvd.h>
+#endif
 #endif
 
 #ifdef USE_WII_SMB
@@ -125,7 +128,13 @@ bool WiiFilesystemFactory::failedToMount(FileSystemType type) {
 	return false;
 }
 
-const DISC_INTERFACE* dvd = &__io_wiidvd;
+#ifdef USE_WII_DI
+#ifndef GAMECUBE
+  const DISC_INTERFACE* dvd = &__io_wiidvd;
+#else
+  const DISC_INTERFACE* dvd = &__io_gcdvd;
+#endif
+#endif
 
 void WiiFilesystemFactory::mount(FileSystemType type) {
 	switch (type) {

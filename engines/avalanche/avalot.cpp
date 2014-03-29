@@ -252,13 +252,6 @@ void AvalancheEngine::init() {
 			_also[i][j] = nullptr;
 	}
 
-#if 0
-	if (_vm->_enhanced->atbios)
-		atkey = "f1";
-	else
-		atkey = "alt-";
-#endif
-
 	_letMeOut = false;
 	_currentMouse = 177;
 	_dropsOk = true;
@@ -1282,7 +1275,7 @@ void AvalancheEngine::minorRedraw() {
 }
 
 void AvalancheEngine::majorRedraw() {
-	warning("STUB: major_redraw()");
+	_graphics->refreshScreen();
 }
 
 uint16 AvalancheEngine::bearing(byte whichPed) {

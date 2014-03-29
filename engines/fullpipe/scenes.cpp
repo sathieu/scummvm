@@ -365,10 +365,6 @@ Vars::Vars() {
 	scene37_soundFlipper = 0;
 	scene37_dudeX = 0;
 
-	scene38_var01 = 0;
-	scene38_var02 = 0;
-	scene38_var03 = 0;
-	scene38_var04 = 0;
 	scene38_boss = 0;
 	scene38_tally = 0;
 	scene38_shorty = 0;
@@ -376,15 +372,19 @@ Vars::Vars() {
 	scene38_dominos = 0;
 	scene38_domino1 = 0;
 	scene38_bottle = 0;
-	scene38_var05 = 0;
-	scene38_var06 = 0;
-	scene38_var07 = 0;
-	scene38_var08 = 0;
-	scene38_var09 = 0;
-	scene38_var10 = 0;
-	scene38_var11 = 0;
-	scene38_var12 = 0;
-	scene38_var13 = 0;
+	scene38_bossCounter = 0;
+	scene38_lastBossAnim = 0;
+	scene38_bossAnimCounter = 0;
+	scene38_tallyCounter = 0;
+	scene38_lastTallyAnim = 0;
+	scene38_tallyAnimCounter = 0;
+	scene38_shortyCounter = 0;
+	scene38_lastShortyAnim = 0;
+	scene38_shortyAnimCounter = 0;
+
+	sceneFinal_var01 = 0;
+	sceneFinal_var02 = 0;
+	sceneFinal_var03 = 0;
 
 	selector = 0;
 }
@@ -975,7 +975,6 @@ bool FullpipeEngine::sceneSwitcher(EntranceInfo *entrance) {
 		_updateCursorCallback = scene37_updateCursor;
 		break;
 
-#if 0
 	case SC_38:
 		sceneVar = _gameLoader->_gameVar->getSubVarByName("SC_38");
 		scene->preloadMovements(sceneVar);
@@ -990,14 +989,13 @@ bool FullpipeEngine::sceneSwitcher(EntranceInfo *entrance) {
 	case SC_FINAL1:
 		sceneVar = _gameLoader->_gameVar->getSubVarByName("SC_FINAL1");
 		scene->preloadMovements(sceneVar);
-		sceneFinal1_initScene();
+		sceneFinal_initScene();
 		_behaviorManager->initBehavior(scene, sceneVar);
 		scene->initObjectCursors("SC_FINAL1");
 		setSceneMusicParameters(sceneVar);
-		addMessageHandler(sceneHandlerFinal1, 2);
-		_updateCursorCallback = sceneFinal1_updateCursor;
+		addMessageHandler(sceneHandlerFinal, 2);
+		_updateCursorCallback = sceneFinal_updateCursor;
 		break;
-#endif
 
 	case SC_DBGMENU:
 		sceneVar = _gameLoader->_gameVar->getSubVarByName("SC_DBGMENU");

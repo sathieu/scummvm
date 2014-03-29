@@ -173,6 +173,13 @@ void scene37_initScene(Scene *sc);
 int sceneHandler37(ExCommand *ex);
 int scene37_updateCursor();
 
+void scene38_initScene(Scene *sc);
+int sceneHandler38(ExCommand *ex);
+
+int sceneFinal_updateCursor();
+void sceneFinal_initScene();
+int sceneHandlerFinal(ExCommand *cmd);
+
 void sceneDbgMenu_initScene(Scene *sc);
 int sceneHandlerDbgMenu(ExCommand *cmd);
 
@@ -516,10 +523,6 @@ public:
 	int scene37_soundFlipper;
 	int scene37_dudeX;
 
-	int scene38_var01;
-	int scene38_var02;
-	int scene38_var03;
-	int scene38_var04;
 	StaticANIObject *scene38_boss;
 	StaticANIObject *scene38_tally;
 	StaticANIObject *scene38_shorty;
@@ -527,15 +530,19 @@ public:
 	StaticANIObject *scene38_dominos;
 	StaticANIObject *scene38_domino1;
 	StaticANIObject *scene38_bottle;
-	int scene38_var05;
-	int scene38_var06;
-	int scene38_var07;
-	int scene38_var08;
-	int scene38_var09;
-	int scene38_var10;
-	int scene38_var11;
-	int scene38_var12;
-	int scene38_var13;
+	int scene38_bossCounter;
+	int scene38_lastBossAnim;
+	int scene38_bossAnimCounter;
+	int scene38_tallyCounter;
+	int scene38_lastTallyAnim;
+	int scene38_tallyAnimCounter;
+	int scene38_shortyCounter;
+	int scene38_lastShortyAnim;
+	int scene38_shortyAnimCounter;
+
+	int sceneFinal_var01;
+	int sceneFinal_var02;
+	int sceneFinal_var03;
 
 	PictureObject *selector;
 };

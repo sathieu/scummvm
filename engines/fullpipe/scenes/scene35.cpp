@@ -64,7 +64,7 @@ void scene35_initScene(Scene *sc) {
 		g_fp->playSound(sndId, 1);
 
 	g_fp->lift_setButton(sO_Level6, ST_LBN_6N);
-	g_fp->lift_sub5(sc, QU_SC35_ENTERLIFT, QU_SC35_EXITLIFT);
+	g_fp->lift_init(sc, QU_SC35_ENTERLIFT, QU_SC35_EXITLIFT);
 
 	g_fp->initArcadeKeys("SC_35");
 
@@ -168,7 +168,7 @@ int sceneHandler35(ExCommand *cmd) {
 		break;
 
 	case MSG_LIFT_CLICKBUTTON:
-		g_fp->lift_animation3();
+		g_fp->lift_clickButton();
 		break;
 
 	case MSG_SC35_STOPFLOW:
